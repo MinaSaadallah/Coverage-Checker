@@ -172,16 +172,24 @@ function extractCoords(url) {
     if (!url) return null;
     let match;
 
-    // Apple Maps coordinate=
+    // Priority 1: !8m2!3d...!4d... (place marker) - get the LAST match
+    const r8m2 = /!8m2!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/g;
+    let last = null;
+    while ((match = r8m2.exec(url)) !== null) last = match;
+    if (last) return { lat: parseFloat(last[1]), lng: parseFloat(last[2]) };
+
+    // Priority 2: Plain !3d...!4d... - get the LAST match
+    const r3d4d = /!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/g;
+    last = null;
+    while ((match = r3d4d.exec(url)) !== null) last = match;
+    if (last) return { lat: parseFloat(last[1]), lng: parseFloat(last[2]) };
+
+    // Priority 3: Apple Maps coordinate=
     match = url.match(/[?&]coordinate=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
     if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
 
-    // Google @lat,lng
+    // Priority 4: @ viewport (less accurate)
     match = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
-    if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
-
-    // Google !3d!4d
-    match = url.match(/!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/);
     if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
 
     return null;

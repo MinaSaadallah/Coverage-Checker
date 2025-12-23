@@ -49,18 +49,13 @@
 
         body {
             font-family: 'Inter', sans-serif;
-            background-color: var(--bg-color);
-            background-image: var(--bg-image);
-            background-size: 100% 100%;
-            background-repeat: no-repeat;
-            background-attachment: fixed;
+            background-color: #0a0a0a;
             color: var(--text-primary);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
             padding: 40px;
-            transition: background-color 0.3s, color 0.3s;
         }
 
         ::selection {
@@ -778,7 +773,7 @@
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
         (function () {
-            var COUNTRY_NAMES = { AD: "Andorra", AE: "UAE", AF: "Afghanistan", AG: "Antigua", AL: "Albania", AM: "Armenia", AO: "Angola", AR: "Argentina", AT: "Austria", AU: "Australia", AW: "Aruba", AZ: "Azerbaijan", BA: "Bosnia", BB: "Barbados", BD: "Bangladesh", BE: "Belgium", BF: "Burkina Faso", BG: "Bulgaria", BH: "Bahrain", BI: "Burundi", BJ: "Benin", BL: "St. Barthelemy", BN: "Brunei", BO: "Bolivia", BQ: "Bonaire", BR: "Brazil", BS: "Bahamas", BT: "Bhutan", BW: "Botswana", BY: "Belarus", BZ: "Belize", CA: "Canada", CD: "DR Congo", CF: "Central African Rep.", CG: "Congo", CH: "Switzerland", CI: "Ivory Coast", CL: "Chile", CM: "Cameroon", CN: "China", CO: "Colombia", CR: "Costa Rica", CU: "Cuba", CV: "Cape Verde", CW: "Curacao", CY: "Cyprus", CZ: "Czechia", DE: "Germany", DJ: "Djibouti", DK: "Denmark", DM: "Dominica", DO: "Dominican Rep.", DZ: "Algeria", EC: "Ecuador", EE: "Estonia", EG: "Egypt", ER: "Eritrea", ES: "Spain", ET: "Ethiopia", FI: "Finland", FJ: "Fiji", FO: "Faroe Islands", FR: "France", GA: "Gabon", GB: "UK", GD: "Grenada", GE: "Georgia", GF: "French Guiana", GH: "Ghana", GL: "Greenland", GM: "Gambia", GN: "Guinea", GP: "Guadeloupe", GQ: "Equatorial Guinea", GR: "Greece", GT: "Guatemala", GW: "Guinea-Bissau", GY: "Guyana", HK: "Hong Kong", HN: "Honduras", HR: "Croatia", HT: "Haiti", HU: "Hungary", ID: "Indonesia", IE: "Ireland", IL: "Israel", IN: "India", IQ: "Iraq", IR: "Iran", IS: "Iceland", IT: "Italy", JM: "Jamaica", JO: "Jordan", JP: "Japan", KE: "Kenya", KG: "Kyrgyzstan", KH: "Cambodia", KM: "Comoros", KN: "St. Kitts", KP: "North Korea", KR: "South Korea", KW: "Kuwait", KZ: "Kazakhstan", LA: "Laos", LB: "Lebanon", LC: "St. Lucia", LI: "Liechtenstein", LK: "Sri Lanka", LR: "Liberia", LS: "Lesotho", LT: "Lithuania", LU: "Luxembourg", LV: "Latvia", LY: "Libya", MA: "Morocco", MC: "Monaco", MD: "Moldova", ME: "Montenegro", MF: "St. Martin", MG: "Madagascar", MK: "North Macedonia", ML: "Mali", MM: "Myanmar", MN: "Mongolia", MO: "Macau", MQ: "Martinique", MR: "Mauritania", MT: "Malta", MU: "Mauritius", MV: "Maldives", MW: "Malawi", MX: "Mexico", MY: "Malaysia", MZ: "Mozambique", NA: "Namibia", NC: "New Caledonia", NE: "Niger", NG: "Nigeria", NI: "Nicaragua", NL: "Netherlands", NO: "Norway", NP: "Nepal", NZ: "New Zealand", OM: "Oman", PA: "Panama", PE: "Peru", PF: "French Polynesia", PG: "Papua New Guinea", PH: "Philippines", PK: "Pakistan", PL: "Poland", PR: "Puerto Rico", PS: "Palestine", PT: "Portugal", PY: "Paraguay", QA: "Qatar", RE: "Reunion", RO: "Romania", RS: "Serbia", RU: "Russia", RW: "Rwanda", SA: "Saudi Arabia", SB: "Solomon Islands", SC: "Seychelles", SD: "Sudan", SE: "Sweden", SG: "Singapore", SI: "Slovenia", SK: "Slovakia", SL: "Sierra Leone", SM: "San Marino", SN: "Senegal", SO: "Somalia", SR: "Suriname", SS: "South Sudan", ST: "Sao Tome", SV: "El Salvador", SX: "Sint Maarten", SY: "Syria", SZ: "Eswatini", TD: "Chad", TG: "Togo", TH: "Thailand", TJ: "Tajikistan", TL: "Timor-Leste", TM: "Turkmenistan", TN: "Tunisia", TO: "Tonga", TR: "Turkey", TT: "Trinidad", TW: "Taiwan", TZ: "Tanzania", UA: "Ukraine", UG: "Uganda", US: "USA", UY: "Uruguay", UZ: "Uzbekistan", VA: "Vatican", VC: "St. Vincent", VE: "Venezuela", VI: "US Virgin Islands", VN: "Vietnam", VU: "Vanuatu", WS: "Samoa", XK: "Kosovo", YE: "Yemen", YT: "Mayotte", ZA: "South Africa", ZM: "Zambia", ZW: "Zimbabwe" };
+            var COUNTRY_NAMES = { AD: "Andorra", AE: "UAE", AF: "Afghanistan", AG: "Antigua", AI: "Anguilla", AL: "Albania", AM: "Armenia", AO: "Angola", AR: "Argentina", AS: "American Samoa", AT: "Austria", AU: "Australia", AW: "Aruba", AZ: "Azerbaijan", BA: "Bosnia", BB: "Barbados", BD: "Bangladesh", BE: "Belgium", BF: "Burkina Faso", BG: "Bulgaria", BH: "Bahrain", BI: "Burundi", BJ: "Benin", BL: "St. Barthelemy", BM: "Bermuda", BN: "Brunei", BO: "Bolivia", BQ: "Bonaire", BR: "Brazil", BS: "Bahamas", BT: "Bhutan", BW: "Botswana", BY: "Belarus", BZ: "Belize", CA: "Canada", CD: "DR Congo", CF: "Central African Rep.", CG: "Congo", CH: "Switzerland", CI: "Ivory Coast", CL: "Chile", CM: "Cameroon", CN: "China", CO: "Colombia", CR: "Costa Rica", CU: "Cuba", CV: "Cape Verde", CW: "Curacao", CY: "Cyprus", CZ: "Czechia", DE: "Germany", DJ: "Djibouti", DK: "Denmark", DM: "Dominica", DO: "Dominican Rep.", DZ: "Algeria", EC: "Ecuador", EE: "Estonia", EG: "Egypt", ER: "Eritrea", ES: "Spain", ET: "Ethiopia", FI: "Finland", FJ: "Fiji", FK: "Falkland Islands", FM: "Micronesia", FO: "Faroe Islands", FR: "France", GA: "Gabon", GB: "UK", GD: "Grenada", GE: "Georgia", GF: "French Guiana", GG: "Guernsey", GH: "Ghana", GI: "Gibraltar", GL: "Greenland", GM: "Gambia", GN: "Guinea", GP: "Guadeloupe", GQ: "Equatorial Guinea", GR: "Greece", GT: "Guatemala", GU: "Guam", GW: "Guinea-Bissau", GY: "Guyana", HK: "Hong Kong", HN: "Honduras", HR: "Croatia", HT: "Haiti", HU: "Hungary", ID: "Indonesia", IE: "Ireland", IL: "Israel", IM: "Isle of Man", IN: "India", IQ: "Iraq", IR: "Iran", IS: "Iceland", IT: "Italy", JE: "Jersey", JM: "Jamaica", JO: "Jordan", JP: "Japan", KE: "Kenya", KG: "Kyrgyzstan", KH: "Cambodia", KM: "Comoros", KN: "St. Kitts", KP: "North Korea", KR: "South Korea", KW: "Kuwait", KY: "Cayman Islands", KZ: "Kazakhstan", LA: "Laos", LB: "Lebanon", LC: "St. Lucia", LI: "Liechtenstein", LK: "Sri Lanka", LR: "Liberia", LS: "Lesotho", LT: "Lithuania", LU: "Luxembourg", LV: "Latvia", LY: "Libya", MA: "Morocco", MC: "Monaco", MD: "Moldova", ME: "Montenegro", MF: "St. Martin", MG: "Madagascar", MH: "Marshall Islands", MK: "North Macedonia", ML: "Mali", MM: "Myanmar", MN: "Mongolia", MO: "Macau", MP: "Northern Mariana Islands", MQ: "Martinique", MR: "Mauritania", MT: "Malta", MU: "Mauritius", MV: "Maldives", MW: "Malawi", MX: "Mexico", MY: "Malaysia", MZ: "Mozambique", NA: "Namibia", NC: "New Caledonia", NE: "Niger", NG: "Nigeria", NI: "Nicaragua", NL: "Netherlands", NO: "Norway", NP: "Nepal", NZ: "New Zealand", OM: "Oman", PA: "Panama", PE: "Peru", PF: "French Polynesia", PG: "Papua New Guinea", PH: "Philippines", PK: "Pakistan", PL: "Poland", PR: "Puerto Rico", PS: "Palestine", PT: "Portugal", PW: "Palau", PY: "Paraguay", QA: "Qatar", RE: "Reunion", RO: "Romania", RS: "Serbia", RU: "Russia", RW: "Rwanda", SA: "Saudi Arabia", SB: "Solomon Islands", SC: "Seychelles", SD: "Sudan", SE: "Sweden", SG: "Singapore", SI: "Slovenia", SK: "Slovakia", SL: "Sierra Leone", SM: "San Marino", SN: "Senegal", SO: "Somalia", SR: "Suriname", SS: "South Sudan", ST: "Sao Tome", SV: "El Salvador", SX: "Sint Maarten", SY: "Syria", SZ: "Eswatini", TC: "Turks and Caicos", TD: "Chad", TG: "Togo", TH: "Thailand", TJ: "Tajikistan", TL: "Timor-Leste", TM: "Turkmenistan", TN: "Tunisia", TO: "Tonga", TR: "Turkey", TT: "Trinidad", TW: "Taiwan", TZ: "Tanzania", UA: "Ukraine", UG: "Uganda", US: "USA", UY: "Uruguay", UZ: "Uzbekistan", VA: "Vatican", VC: "St. Vincent", VE: "Venezuela", VG: "British Virgin Islands", VI: "US Virgin Islands", VN: "Vietnam", VU: "Vanuatu", WS: "Samoa", XK: "Kosovo", YE: "Yemen", YT: "Mayotte", ZA: "South Africa", ZM: "Zambia", ZW: "Zimbabwe" };
             var NAME_TO_CODE = { "south korea": "KR", "korea": "KR", "japan": "JP", "china": "CN", "taiwan": "TW", "united states": "US", "usa": "US", "united kingdom": "GB", "uk": "GB", "germany": "DE", "france": "FR", "italy": "IT", "spain": "ES", "canada": "CA", "australia": "AU", "brazil": "BR", "mexico": "MX", "india": "IN", "puerto rico": "PR", "vanuatu": "VU" };
             var territoryExceptions = { PR: { parent: "US", bbox: [17.883, -67.942, 18.515, -65.22] }, VI: { parent: "US", bbox: [17.636, -65.091, 18.579, -64.33] }, AW: { parent: "NL", bbox: [12.373, -70.132, 12.64, -69.8] }, CW: { parent: "NL", bbox: [12, -69.2, 12.3, -68.6] }, BQ: { parent: "NL", bbox: [11.7, -69.3, 13, -64.85] }, SX: { parent: "NL", bbox: [18.02, -63.15, 18.1, -62.98] }, BL: { parent: "FR", bbox: [17.85, -62.9, 17.95, -62.75] }, MF: { parent: "FR", bbox: [18.02, -63.15, 18.1, -62.98] }, GP: { parent: "FR", bbox: [15.8, -61.9, 16.7, -61] }, MQ: { parent: "FR", bbox: [14.39, -61.3, 15.02, -60.7] }, GF: { parent: "FR", bbox: [-6, -54.5, 6.2, -49.5] }, NC: { parent: "FR", bbox: [-23, 164, -19, 167.5] }, PF: { parent: "FR", bbox: [-27, -154, -3, -134] }, RE: { parent: "FR", bbox: [-21.5, 55, -20.5, 55.8] }, YT: { parent: "FR", bbox: [-13, 44, -11, 45] }, HK: { parent: "CN", bbox: [22.1, 113.8, 22.6, 114.5] }, MO: { parent: "CN", bbox: [22.1, 113.5, 22.25, 113.6] } };
 
@@ -1196,13 +1191,27 @@
 
             function extractCoords(url) {
                 try { url = decodeURIComponent(url); } catch (e) { }
-                var m, r = /!8m2!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/g, last = null;
+                var m, r, last = null;
+
+                // Priority 1: !8m2!3d...!4d... (place marker) - get the LAST one
+                r = /!8m2!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/g;
                 while ((m = r.exec(url)) !== null) last = m;
                 if (last) return { lat: parseFloat(last[1]), lng: parseFloat(last[2]) };
+
+                // Priority 2: Plain !3d...!4d... (without !8m2) - get the LAST one
+                last = null;
+                r = /!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/g;
+                while ((m = r.exec(url)) !== null) last = m;
+                if (last) return { lat: parseFloat(last[1]), lng: parseFloat(last[2]) };
+
+                // Priority 3: @ coordinates (viewport center - less accurate)
                 m = url.match(/@(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
                 if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+
+                // Priority 4: Query params
                 m = url.match(/[?&](?:q|ll|sll)=(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
                 if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+
                 return null;
             }
 
@@ -1221,7 +1230,7 @@
                 if (m) {
                     var p = decodeURIComponent(m[1].replace(/\+/g, ' ')).toLowerCase();
                     if (p.indexOf('hong kong') !== -1) return 'HK';
-                    if (p.indexOf('macau') !== -1) return 'MO';
+                    if (p.indexOf('macau') !== -1 || p.indexOf('macao') !== -1) return 'MO';
                     for (var n in NAME_TO_CODE) { if (p.indexOf(n) !== -1) return NAME_TO_CODE[n]; }
                 }
                 return null;

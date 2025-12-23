@@ -352,8 +352,67 @@ function getDefaultTerritories() {
     AW: { name: "Aruba", parent: "NL", bbox: [12.373, -70.132, 12.64, -69.8] },
     CW: { name: "Curaçao", parent: "NL", bbox: [12.0, -69.2, 12.3, -68.6] },
     GP: { name: "Guadeloupe", parent: "FR", bbox: [15.8, -61.9, 16.7, -61.0] },
-    MQ: { name: "Martinique", parent: "FR", bbox: [14.39, -61.3, 15.02, -60.7] }
+    MQ: { name: "Martinique", parent: "FR", bbox: [14.39, -61.3, 15.02, -60.7] },
+    AS: { name: "American Samoa", parent: "US", bbox: [-14.5, -171, -14, -169] },
+    GU: { name: "Guam", parent: "US", bbox: [13.2, 144.6, 13.7, 145] },
+    BM: { name: "Bermuda", parent: "GB", bbox: [32.2, -64.9, 32.4, -64.6] },
+    KY: { name: "Cayman Islands", parent: "GB", bbox: [19.2, -81.5, 19.8, -79.7] }
   };
+}
+
+/**
+ * Reverse geocodes coordinates to get country/territory code using Nominatim.
+ * Detects special territories (Macau, Hong Kong, etc.) via ISO3166-2-lvl3.
+ * @param {number} lat Latitude
+ * @param {number} lng Longitude
+ * @returns {Object} { countryCode, country, state }
+ */
+function reverseGeocode(lat, lng) {
+  try {
+    var url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&addressdetails=1';
+    var response = UrlFetchApp.fetch(url, {
+      muteHttpExceptions: true,
+      headers: {
+        'User-Agent': 'CoverageChecker/1.0',
+        'Accept-Language': 'en'
+      }
+    });
+    
+    if (response.getResponseCode() !== 200) {
+      return { error: 'Geocoding failed' };
+    }
+    
+    var data = JSON.parse(response.getContentText());
+    if (!data || !data.address) {
+      return { error: 'No address data' };
+    }
+    
+    var countryCode = (data.address.country_code || '').toUpperCase();
+    
+    // Check for special administrative regions (Macau, Hong Kong, etc.)
+    // ISO3166-2-lvl3 contains codes like "CN-MO" for Macau, "CN-HK" for Hong Kong
+    var iso3166 = data.address['ISO3166-2-lvl3'] || data.address['ISO3166-2-lvl4'] || '';
+    if (iso3166) {
+      var parts = iso3166.split('-');
+      if (parts.length >= 2) {
+        var regionCode = parts[1].toUpperCase();
+        // Known special regions with their own operator data
+        var specialRegions = ['HK', 'MO', 'TW', 'PR', 'VI', 'GU', 'AS', 'MP', 'BM', 'KY', 'VG', 'AI', 'TC'];
+        if (specialRegions.indexOf(regionCode) !== -1) {
+          countryCode = regionCode;
+        }
+      }
+    }
+    
+    return {
+      countryCode: countryCode,
+      country: data.address.country || '',
+      state: data.address.state || data.address.territory || ''
+    };
+  } catch (e) {
+    Logger.log('Geocoding error: ' + e.toString());
+    return { error: e.toString() };
+  }
 }
 
 // ============================================================
@@ -535,40 +594,37 @@ function expandUrl(shortUrl) {
 
 /**
  * Extracts coordinates from a URL string.
+ * Priority: 1) !8m2!3d!4d (place) 2) !3d!4d 3) coordinate= 4) @ viewport 5) query params
  */
 function extractCoords(url) {
   if (!url) return null;
   
   try { url = decodeURIComponent(url); } catch (e) {}
   
-  // Apple Maps coordinate= parameter (IMPORTANT - check this first!)
-  var match = url.match(/[?&]coordinate=(-?\d+\.?\d*)(?:%2C|,)(-?\d+\.?\d*)/);
-  if (match) {
-    Logger.log('Found coordinate= param: ' + match[1] + ',' + match[2]);
-    return validateCoords(match[1], match[2]);
-  }
+  var match, r, last;
   
-  // Also check unencoded version
-  match = url.match(/coordinate=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
-  if (match) {
-    Logger.log('Found coordinate= param (unencoded): ' + match[1] + ',' + match[2]);
-    return validateCoords(match[1], match[2]);
-  }
+  // Priority 1: !8m2!3d...!4d... (Google place marker) - get LAST match
+  r = /!8m2!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/g;
+  last = null;
+  while ((match = r.exec(url)) !== null) last = match;
+  if (last) return validateCoords(last[1], last[2]);
   
-  // Google Pin !8m2!3d...!4d...
-  match = url.match(/!8m2!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/);
+  // Priority 2: Plain !3d...!4d... - get LAST match
+  r = /!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/g;
+  last = null;
+  while ((match = r.exec(url)) !== null) last = match;
+  if (last) return validateCoords(last[1], last[2]);
+  
+  // Priority 3: Apple Maps coordinate=
+  match = url.match(/[?&]coordinate=(-?\d+\.?\d*)(?:%2C|,)(-?\d+\.?\d*)/);
   if (match) return validateCoords(match[1], match[2]);
   
-  // Viewport @lat,lng
+  // Priority 4: Viewport @lat,lng (less accurate - map center, not place)
   match = url.match(/@(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
   if (match) return validateCoords(match[1], match[2]);
   
-  // Query params (ll, sll, q)
+  // Priority 5: Query params (ll, sll, q)
   match = url.match(/[?&](?:q|ll|sll)=(-?\d+\.?\d*)(?:%2C|,)(-?\d+\.?\d*)/);
-  if (match) return validateCoords(match[1], match[2]);
-  
-  // Old !3d!4d format
-  match = url.match(/!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/);
   if (match) return validateCoords(match[1], match[2]);
   
   return null;
