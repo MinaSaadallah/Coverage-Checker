@@ -103,11 +103,27 @@ app.get('/api/geocode', async (req, res) => {
 
         const data = response.data;
         if (data && data.address) {
-            const countryCode = (data.address.country_code || '').toUpperCase();
+            let countryCode = (data.address.country_code || '').toUpperCase();
+
+            // Check for special administrative regions (Macau, Hong Kong, etc.)
+            // ISO3166-2-lvl3 contains codes like "CN-MO" for Macau, "CN-HK" for Hong Kong
+            const iso3166 = data.address['ISO3166-2-lvl3'] || data.address['ISO3166-2-lvl4'] || '';
+            if (iso3166) {
+                const parts = iso3166.split('-');
+                if (parts.length >= 2) {
+                    const regionCode = parts[1].toUpperCase();
+                    // Known special regions that have their own operator data
+                    const specialRegions = ['HK', 'MO', 'TW', 'PR', 'VI', 'GU', 'AS', 'MP'];
+                    if (specialRegions.includes(regionCode)) {
+                        countryCode = regionCode;
+                    }
+                }
+            }
+
             const country = data.address.country || '';
             const state = data.address.state || data.address.territory || '';
 
-            res.set('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+            res.set('Cache-Control', 'public, max-age=86400');
             return res.json({
                 countryCode: countryCode,
                 country: country,
