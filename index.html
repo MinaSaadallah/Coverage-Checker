@@ -833,9 +833,7 @@
                     sourceOptions.forEach(function (o) { o.classList.remove('active'); });
                     this.classList.add('active');
 
-                    // Update State
                     currentSource = this.dataset.source;
-                    console.log('Switched source to:', currentSource);
 
                     // Refresh Operator List if country selected
                     if (currentCountryCode) {
@@ -973,8 +971,6 @@
                 }
 
                 // Filter operators based on Current Source
-                console.log('Updating list for:', countryCode, 'Source:', currentSource);
-
                 var allOps = countryMap[countryCode];
                 var filteredOps = [];
 
@@ -1073,7 +1069,6 @@
                 var isLocal = (typeof google === 'undefined' || !google.script);
 
                 if (isLocal) {
-                    console.log('Running in LOCAL mode');
                     fetch('/api/operators')
                         .then(function (response) { return response.json(); })
                         .then(function (data) {
@@ -1083,7 +1078,6 @@
                             setStatus('Error loading local data: ' + e);
                         });
                 } else {
-                    console.log('Running in APPS SCRIPT mode');
                     google.script.run
                         .withSuccessHandler(handleOperatorsData)
                         .withFailureHandler(function (e) { setStatus('Error: ' + e); })
@@ -1115,7 +1109,6 @@
                 });
 
                 populateCountrySelect();
-                console.log('Operators loaded. Resetting status...');
                 resetStatus();
             }
 
@@ -1136,11 +1129,9 @@
             }
 
             function updateButton(active) {
-                console.log('updateButton called with:', active, 'currentCoords:', currentCoords);
                 if (active) {
                     elNperf.classList.remove('disabled');
                     elNperf.classList.add('active');
-                    console.log('Button enabled, href:', elNperf.href);
                     // GSMA button state is handled in onOperatorChange based on gsmaId
                 } else {
                     elNperf.classList.add('disabled');

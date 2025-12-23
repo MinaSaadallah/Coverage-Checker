@@ -1,70 +1,51 @@
 const express = require('express');
 const fs = require('fs');
 const path = require('path');
-const axios = require('axios'); // For URL expansion if needed
+const axios = require('axios');
 const app = express();
 const PORT = 3000;
 
+// Cache operators data in memory
+let operatorsCache = null;
+let operatorsCacheTime = 0;
+const CACHE_DURATION = 5 * 60 * 1000; // 5 minutes
+
 app.use(express.json());
-app.use(express.static(__dirname));
+app.use(express.static(__dirname, { maxAge: '1h' }));
 
 // ===================================
 // GAS SHIM INJECTION
 // ===================================
 const GAS_SHIM = `
 <script>
-console.log("Injecting GAS Shim for Local Development...");
 window.google = window.google || {};
 window.google.script = window.google.script || {};
 window.google.script.run = {
-    withSuccessHandler: function(success) {
-        this._success = success;
-        return this;
-    },
-    withFailureHandler: function(failure) {
-        this._failure = failure;
-        return this;
-    },
+    withSuccessHandler: function(success) { this._success = success; return this; },
+    withFailureHandler: function(failure) { this._failure = failure; return this; },
     getOperators: function() {
-        console.log("Fetching operators locally...");
         fetch('/api/operators')
             .then(r => r.json())
-            .then(data => {
-                if(this._success) this._success(data);
-            })
-            .catch(err => {
-                console.error(err);
-                if(this._failure) this._failure(err);
-            });
+            .then(data => { if(this._success) this._success(data); })
+            .catch(err => { if(this._failure) this._failure(err); });
     },
     getTerritories: function() {
         fetch('/api/territories')
             .then(r => r.json())
-            .then(data => {
-                 if(this._success) this._success(data);
-            })
-            .catch(e => {
-                 // Fallback to empty if not implemented yet
-                 if(this._success) this._success({});
-            });
+            .then(data => { if(this._success) this._success(data); })
+            .catch(() => { if(this._success) this._success({}); });
     },
     expandUrl: function(url) {
-        console.log("Expanding URL locally:", url);
         fetch('/api/expand', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ url: url })
         })
         .then(r => r.json())
-        .then(data => {
-            if(this._success) this._success(data);
-        })
-        .catch(err => {
-             if(this._failure) this._failure(err);
-        });
+        .then(data => { if(this._success) this._success(data); })
+        .catch(err => { if(this._failure) this._failure(err); });
     }
 };
-console.log("GAS Shim ready.");
 </script>
 `;
 
@@ -77,17 +58,23 @@ app.get('/', (req, res) => {
     res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-// API: Get Operators
+// API: Get Operators (with memory caching)
 app.get('/api/operators', (req, res) => {
     try {
+        const now = Date.now();
+        if (operatorsCache && (now - operatorsCacheTime) < CACHE_DURATION) {
+            res.set('Cache-Control', 'public, max-age=300');
+            return res.json(operatorsCache);
+        }
+
         const dataPath = path.join(__dirname, 'operators.json');
         if (fs.existsSync(dataPath)) {
-            const data = fs.readFileSync(dataPath, 'utf8');
-            res.set('Cache-Control', 'no-store');
-            res.json(JSON.parse(data));
+            const data = JSON.parse(fs.readFileSync(dataPath, 'utf8'));
+            operatorsCache = data;
+            operatorsCacheTime = now;
+            res.set('Cache-Control', 'public, max-age=300');
+            res.json(data);
         } else {
-            // If no data, return empty or try to trigger fetch
-            console.warn("operators.json not found. Run 'node data-fetcher.js' first.");
             res.json([]);
         }
     } catch (e) {
@@ -111,50 +98,32 @@ app.get('/api/territories', (req, res) => {
     res.json(defaults);
 });
 
-// API: Expand URL (Simplified version of Code.gs)
+// API: Expand URL
 app.post('/api/expand', async (req, res) => {
     const { url } = req.body;
     if (!url) return res.json({ error: 'No URL provided' });
 
     try {
-        console.log(`Expanding: ${url}`);
-
         let targetUrl = url;
-        // Basic redirect following
         try {
-            const response = await axios.head(url, { maxRedirects: 10, validateStatus: null });
+            const response = await axios.head(url, { maxRedirects: 10, validateStatus: null, timeout: 5000 });
             if (response.request.res.responseUrl) {
                 targetUrl = response.request.res.responseUrl;
             }
-        } catch (e) {
-            // If HEAD fails, try GET or just use original
-            console.log("HEAD failed, trying generic logic");
-        }
+        } catch (e) { /* Use original URL */ }
 
-        // Use a simple coordinate extraction regex on the final URL
-        // Matches @lat,lng or !3dlat!4dlng or coordinate=lat,lng
         const coords = extractCoords(targetUrl);
+        if (coords) return res.json({ expandedUrl: targetUrl, coords });
 
-        if (coords) {
-            return res.json({ expandedUrl: targetUrl, coords });
-        }
-
-        // If still no coords, fetch body and regex
         const bodyRes = await axios.get(targetUrl, {
-            headers: { 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 14_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/14.0 Mobile/15E148 Safari/604.1' }
+            headers: { 'User-Agent': 'Mozilla/5.0' },
+            timeout: 5000
         });
-        const html = bodyRes.data;
-
-        // Try to find coords in HTML (Apple Maps uses meta tags often)
-        const htmlCoords = extractCoordsFromHtml(html);
-        if (htmlCoords) {
-            return res.json({ expandedUrl: targetUrl, coords: htmlCoords });
-        }
+        const htmlCoords = extractCoordsFromHtml(bodyRes.data);
+        if (htmlCoords) return res.json({ expandedUrl: targetUrl, coords: htmlCoords });
 
         return res.json({ expandedUrl: targetUrl, error: 'Could not find coordinates' });
-
     } catch (e) {
-        console.error(e);
         res.json({ error: e.message });
     }
 });
