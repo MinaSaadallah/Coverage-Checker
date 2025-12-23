@@ -82,20 +82,44 @@ app.get('/api/operators', (req, res) => {
     }
 });
 
-// API: Get Territories
-app.get('/api/territories', (req, res) => {
-    // Return default territories for now, or read from territories.json
-    const defaults = {
-        PR: { name: "Puerto Rico", parent: "US", bbox: [17.883, -67.942, 18.515, -65.22] },
-        VI: { name: "U.S. Virgin Islands", parent: "US", bbox: [17.636, -65.091, 18.579, -64.33] },
-        HK: { name: "Hong Kong", parent: "CN", bbox: [22.1, 113.8, 22.6, 114.5] },
-        MO: { name: "Macau", parent: "CN", bbox: [22.1, 113.5, 22.25, 113.6] },
-        AW: { name: "Aruba", parent: "NL", bbox: [12.373, -70.132, 12.64, -69.8] },
-        CW: { name: "Curaçao", parent: "NL", bbox: [12.0, -69.2, 12.3, -68.6] },
-        GP: { name: "Guadeloupe", parent: "FR", bbox: [15.8, -61.9, 16.7, -61.0] },
-        MQ: { name: "Martinique", parent: "FR", bbox: [14.39, -61.3, 15.02, -60.7] }
-    };
-    res.json(defaults);
+// API: Reverse Geocode - Get country code from coordinates using Nominatim
+app.get('/api/geocode', async (req, res) => {
+    const { lat, lng } = req.query;
+    if (!lat || !lng) return res.json({ error: 'lat and lng required' });
+
+    try {
+        const response = await axios.get(`https://nominatim.openstreetmap.org/reverse`, {
+            params: {
+                lat: lat,
+                lon: lng,
+                format: 'json',
+                addressdetails: 1
+            },
+            headers: {
+                'User-Agent': 'CoverageChecker/1.0'
+            },
+            timeout: 5000
+        });
+
+        const data = response.data;
+        if (data && data.address) {
+            const countryCode = (data.address.country_code || '').toUpperCase();
+            const country = data.address.country || '';
+            const state = data.address.state || data.address.territory || '';
+
+            res.set('Cache-Control', 'public, max-age=86400'); // Cache for 24 hours
+            return res.json({
+                countryCode: countryCode,
+                country: country,
+                state: state,
+                displayName: data.display_name
+            });
+        }
+
+        res.json({ error: 'Could not determine location' });
+    } catch (e) {
+        res.json({ error: e.message });
+    }
 });
 
 // API: Expand URL

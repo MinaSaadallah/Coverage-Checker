@@ -1228,33 +1228,33 @@
             }
 
             function detectCountryFromAPI(lat, lng) {
-                if (lat >= 22 && lat <= 32 && lng >= 24 && lng <= 37) { applyCountry('EG'); return; }
-                fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=10', { headers: { 'Accept-Language': 'en' } })
+                // Use our cached geocoding endpoint
+                var isLocal = (typeof google === 'undefined' || !google.script);
+                var url = isLocal
+                    ? '/api/geocode?lat=' + lat + '&lng=' + lng
+                    : 'https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=10';
+
+                fetch(url, { headers: { 'Accept-Language': 'en' } })
                     .then(function (r) { return r.json(); })
-                    .then(function (d) { if (d && d.address && d.address.country_code) applyCountry(d.address.country_code.toUpperCase()); else setStatus('Select country'); })
+                    .then(function (d) {
+                        var code = isLocal
+                            ? (d.countryCode || '')
+                            : (d.address && d.address.country_code ? d.address.country_code.toUpperCase() : '');
+                        if (code) applyCountry(code);
+                        else setStatus('Select country');
+                    })
                     .catch(function () { setStatus('Select country'); });
             }
 
             function applyCountry(code) {
-                if (currentCoords) {
-                    for (var t in territoryExceptions) {
-                        var e = territoryExceptions[t];
-                        if (e.parent === code && currentCoords.lat >= e.bbox[0] && currentCoords.lat <= e.bbox[2] && currentCoords.lng >= e.bbox[1] && currentCoords.lng <= e.bbox[3]) {
-                            code = t;
-                            break;
-                        }
-                    }
-                }
-
-                // Force uppercase for matching
+                // Nominatim already returns correct territory codes (PR, HK, etc.)
                 var upperCode = code.toUpperCase();
 
                 if (countryMap[upperCode]) {
                     setStatus('Detected: ' + (COUNTRY_NAMES[upperCode] || upperCode));
                     setSelectValue(countrySelectEl, upperCode);
                 } else {
-                    // If you see this, the country is missing from the "Operators" sheet
-                    setStatus('No data for ' + upperCode + '. Please run Update in the Sheet.');
+                    setStatus('No data for ' + upperCode);
                 }
             }
 
