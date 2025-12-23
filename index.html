@@ -1,0 +1,1292 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Coverage Checker</title>
+    <base target="_top">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        :root {
+            --bg-color: #050505;
+            /* Solid Black - Dark Mode */
+            --bg-image: none;
+
+            --text-primary: #ffffff;
+            --text-secondary: #a1a1aa;
+            --text-muted: #71717a;
+            --border-color: rgba(255, 255, 255, 0.1);
+            --input-bg: rgba(20, 20, 20, 0.4);
+            --input-placeholder: rgba(161, 161, 170, 0.4);
+            --input-footer-bg: rgba(255, 255, 255, 0.03);
+            --accent-color: #22c55e;
+            --accent-hover: #16a34a;
+            --btn-secondary-bg: rgba(255, 255, 255, 0.05);
+            --btn-secondary-border: rgba(255, 255, 255, 0.1);
+            --btn-secondary-text: #e4e4e7;
+            --btn-secondary-hover-bg: rgba(255, 255, 255, 0.1);
+            --dropdown-bg: #0f0f0f;
+            --dropdown-hover: #1a1a1a;
+            --map-container-bg: #050505;
+            --map-container-border: rgba(255, 255, 255, 0.1);
+            --map-shadow: rgba(0, 0, 0, 0.2);
+            --leaflet-control-bg: rgba(20, 20, 20, 0.6);
+            --leaflet-control-text: #fff;
+            --leaflet-control-border: rgba(255, 255, 255, 0.1);
+        }
+
+
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--bg-color);
+            background-image: var(--bg-image);
+            background-size: 100% 100%;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            transition: background-color 0.3s, color 0.3s;
+        }
+
+        ::selection {
+            background: var(--accent-color);
+            color: #ffffff;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: var(--text-secondary);
+            border-radius: 3px;
+            opacity: 0.5;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--text-primary);
+        }
+
+        /* Pulse Animation */
+        @keyframes pulse {
+
+            0%,
+            100% {
+                opacity: 1;
+            }
+
+            50% {
+                opacity: 0.5;
+            }
+        }
+
+        .animate-pulse {
+            animation: pulse 2s cubic-bezier(0.4, 0, 0.6, 1) infinite;
+        }
+
+
+
+        /* Removed Glassmorphism */
+        .input-wrapper,
+        .custom-select-input,
+        .map-container,
+        .btn,
+        .theme-toggle {
+            backdrop-filter: none;
+            -webkit-backdrop-filter: none;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .map-container {
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+        }
+
+        .input-wrapper,
+        .custom-select-input {
+            background: var(--bg-color);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .theme-toggle {
+            position: fixed;
+            top: 24px;
+            right: 24px;
+            width: 44px;
+            height: 44px;
+            border-radius: 12px;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            color: var(--text-secondary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            z-index: 1000;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+        }
+
+        .theme-toggle:hover {
+            color: var(--accent-color);
+            border-color: var(--accent-color);
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.15);
+            transform: translateY(-1px);
+        }
+
+        .grid {
+            display: grid;
+            grid-template-columns: 400px 1fr;
+            gap: 32px;
+        }
+
+        .sidebar {
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+        }
+
+        .title {
+            font-size: 2rem;
+            font-weight: 700;
+            letter-spacing: -0.025em;
+            margin-bottom: 8px;
+        }
+
+        .title .accent {
+            color: var(--accent-color);
+        }
+
+        .subtitle {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            opacity: 0.8;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .form-group {
+            width: 100%;
+        }
+
+        .label {
+            display: block;
+            font-size: 10px;
+            font-weight: 700;
+            color: var(--text-secondary);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            opacity: 0.7;
+        }
+
+        .input-wrapper {
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            overflow: hidden;
+            transition: all 0.2s;
+        }
+
+        .input-wrapper:focus-within {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 1px var(--accent-color);
+        }
+
+        .input {
+            width: 100%;
+            background: transparent;
+            border: none;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            padding: 12px;
+            height: 44px;
+            outline: none;
+            font-family: inherit;
+        }
+
+        .input::placeholder {
+            color: var(--input-placeholder);
+        }
+
+        .input-footer {
+            padding: 6px 12px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-top: 1px solid var(--border-color);
+            background: var(--input-footer-bg);
+            font-size: 10px;
+            font-weight: 700;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+
+        .status {
+            color: var(--accent-color);
+        }
+
+        .coords {
+            color: var(--text-secondary);
+            opacity: 0.7;
+        }
+
+        /* Custom Select - Single Input */
+        .custom-select {
+            position: relative;
+            width: 100%;
+        }
+
+        .custom-select-input {
+            width: 100%;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            color: var(--text-primary);
+            font-size: 0.875rem;
+            padding: 0 36px 0 12px;
+            height: 44px;
+            outline: none;
+            font-family: inherit;
+            cursor: text;
+            transition: all 0.2s;
+        }
+
+        .custom-select-input:hover {
+            border-color: var(--text-secondary);
+            opacity: 0.8;
+        }
+
+        .custom-select.open .custom-select-input,
+        .custom-select-input:focus {
+            border-color: var(--accent-color);
+            box-shadow: 0 0 0 1px var(--accent-color);
+            opacity: 1;
+        }
+
+        .custom-select-input:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            background: var(--bg-color);
+            /* slightly different if needed? */
+        }
+
+        .custom-select-input::placeholder {
+            color: var(--input-placeholder);
+        }
+
+        .custom-select-arrow {
+            position: absolute;
+            right: 12px;
+            top: 50%;
+            transform: translateY(-50%);
+            pointer-events: none;
+            color: var(--text-secondary);
+            font-size: 10px;
+            transition: transform 0.2s;
+            opacity: 0.7;
+        }
+
+        .custom-select.open .custom-select-arrow {
+            transform: translateY(-50%) rotate(180deg);
+        }
+
+        .custom-select-dropdown {
+            position: absolute;
+            top: calc(100% + 8px);
+            left: 0;
+            width: 100%;
+            background: var(--dropdown-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 1000;
+            display: none;
+            max-height: 280px;
+            overflow-y: auto;
+        }
+
+        .custom-select.open .custom-select-dropdown {
+            display: block;
+        }
+
+        .custom-select-option {
+            padding: 12px 16px;
+            cursor: pointer;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            color: var(--text-primary);
+            transition: background 0.15s;
+        }
+
+        .custom-select-option:hover {
+            background: var(--dropdown-hover);
+        }
+
+        .custom-select-option.selected {
+            background: rgba(34, 197, 94, 0.15);
+            color: var(--accent-color);
+            border-left: 2px solid var(--accent-color);
+        }
+
+        .custom-select-option.hidden {
+            display: none;
+        }
+
+        .custom-select-option .code {
+            opacity: 0.5;
+            font-size: 12px;
+        }
+
+        .badge-container {
+            display: flex;
+            gap: 6px;
+            margin-left: auto;
+            padding-left: 12px;
+            align-items: center;
+        }
+
+        .badge-icon {
+            width: 16px;
+            height: 16px;
+            opacity: 0.8;
+        }
+
+        .badge-icon.nperf {
+            color: #4ade80;
+        }
+
+        .badge-icon.gsma {
+            color: #60a5fa;
+        }
+
+        /* Dynamic Action Buttons */
+        .btn-primary {
+            background: var(--accent-color);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn-outline {
+            background: transparent;
+            border: 1px solid var(--border-color);
+            color: var(--text-primary);
+        }
+
+        .btn-outline:hover {
+            border-color: var(--text-secondary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .custom-select-empty {
+            padding: 16px;
+            text-align: center;
+            color: var(--text-secondary);
+            font-size: 13px;
+            display: none;
+        }
+
+        .custom-select-empty.show {
+            display: block;
+        }
+
+        .custom-select-dropdown::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .custom-select-dropdown::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        .custom-select-dropdown::-webkit-scrollbar-thumb {
+            background: var(--accent-color);
+            border-radius: 3px;
+        }
+
+        .btn {
+            width: 100%;
+            background: var(--accent-color);
+            border: none;
+            border-radius: 8px;
+            color: #ffffff;
+            /* Always white for primary button */
+            font-weight: 700;
+            font-size: 1rem;
+            height: 48px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            text-decoration: none;
+            font-family: inherit;
+        }
+
+        .btn:hover {
+            background: var(--accent-hover);
+        }
+
+        .btn.disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+            pointer-events: none;
+        }
+
+        .btn.active {
+            box-shadow: 0 0 15px rgba(34, 197, 94, 0.4);
+            pointer-events: auto !important;
+            cursor: pointer !important;
+            opacity: 1 !important;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            width: 100%;
+        }
+
+        .button-group .btn {
+            flex: 1;
+            font-size: 0.875rem;
+            height: 44px;
+        }
+
+        .btn.btn-secondary {
+            background: var(--btn-secondary-bg);
+            border: 1px solid var(--btn-secondary-border);
+            color: var(--btn-secondary-text);
+        }
+
+        .btn.btn-secondary:hover {
+            background: var(--btn-secondary-hover-bg);
+            border-color: var(--text-secondary);
+        }
+
+        .btn.btn-secondary.active {
+            box-shadow: 0 0 15px rgba(255, 255, 255, 0.1);
+        }
+
+        .map-container {
+            background: var(--map-container-bg);
+            border: 1px solid var(--map-container-border);
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 0 0 1px var(--map-shadow), 0 4px 20px rgba(0, 0, 0, 0.5);
+            min-height: 400px;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+            background: #222;
+        }
+
+        .footer {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            padding: 20px;
+            text-align: center;
+            pointer-events: none;
+        }
+
+        .footer-text {
+            font-size: 0.875rem;
+            color: var(--text-secondary);
+            font-weight: 500;
+        }
+
+        .footer-text .accent {
+            color: var(--accent-color);
+            font-weight: 700;
+        }
+
+        .leaflet-bar {
+            border: none !important;
+            margin: 15px 0 0 15px !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+            border-radius: 10px !important;
+            overflow: hidden !important;
+        }
+
+        .leaflet-bar a {
+            background-color: var(--leaflet-control-bg) !important;
+            backdrop-filter: blur(8px) !important;
+            -webkit-backdrop-filter: blur(8px) !important;
+            color: var(--leaflet-control-text) !important;
+            border-bottom: 1px solid var(--leaflet-control-border) !important;
+            width: 36px !important;
+            height: 36px !important;
+            line-height: 36px !important;
+            font-size: 16px !important;
+            font-weight: 500 !important;
+            transition: all 0.2s ease !important;
+        }
+
+        .leaflet-bar a:hover {
+            background-color: rgba(34, 197, 94, 0.9) !important;
+            color: #fff !important;
+        }
+
+        .leaflet-bar a:first-child {
+            border-radius: 10px 10px 0 0 !important;
+        }
+
+        .leaflet-bar a:last-child {
+            border-radius: 0 0 10px 10px !important;
+            border-bottom: none !important;
+        }
+
+        .leaflet-control-attribution {
+            display: none !important;
+        }
+
+        /* Layer Control Styling */
+        .leaflet-control-layers {
+            border: none !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+            border-radius: 10px !important;
+            font-family: Inter, sans-serif !important;
+            font-size: 12px !important;
+            background: transparent !important;
+            overflow: hidden !important;
+        }
+
+        .leaflet-control-layers-toggle {
+            background-color: var(--leaflet-control-bg) !important;
+            backdrop-filter: blur(8px) !important;
+            -webkit-backdrop-filter: blur(8px) !important;
+            width: 36px !important;
+            height: 36px !important;
+            border-radius: 10px !important;
+            background-image: none !important;
+            position: relative !important;
+            transition: all 0.2s ease !important;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4) !important;
+        }
+
+        .leaflet-control-layers-toggle::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: 16px;
+            height: 2px;
+            background: var(--leaflet-control-text);
+            box-shadow: 0 -5px 0 var(--leaflet-control-text), 0 5px 0 var(--leaflet-control-text);
+            border-radius: 1px;
+        }
+
+        .leaflet-control-layers-toggle:hover {
+            background-color: rgba(34, 197, 94, 0.9) !important;
+        }
+
+        .leaflet-control-layers-expanded {
+            background-color: var(--leaflet-control-bg) !important;
+            backdrop-filter: blur(12px) !important;
+            -webkit-backdrop-filter: blur(12px) !important;
+            border: 1px solid var(--leaflet-control-border) !important;
+            padding: 10px !important;
+            border-radius: 10px !important;
+            color: var(--leaflet-control-text) !important;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5) !important;
+        }
+
+        .leaflet-control-layers-base label {
+            display: flex !important;
+            align-items: center !important;
+            padding: 6px 0 !important;
+            cursor: pointer !important;
+        }
+
+        .leaflet-control-layers-selector {
+            accent-color: #22c55e !important;
+            margin-right: 8px !important;
+        }
+
+        .leaflet-bottom.leaflet-right .leaflet-control {
+            margin-right: 15px !important;
+            margin-bottom: 15px !important;
+        }
+
+        /* Source Selector Tabs */
+        .source-selector {
+            display: flex;
+            background: var(--input-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            padding: 4px;
+            gap: 4px;
+        }
+
+        .source-option {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 36px;
+            border-radius: 6px;
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: var(--text-secondary);
+            cursor: pointer;
+            transition: all 0.2s;
+            user-select: none;
+        }
+
+        .source-option:hover {
+            color: var(--text-primary);
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .source-option.active {
+            background: var(--accent-color);
+            color: white;
+            box-shadow: 0 2px 8px rgba(34, 197, 94, 0.3);
+        }
+
+        @media (max-width: 768px) {
+            body {
+                display: block;
+                padding: 24px;
+            }
+
+            .container {
+                margin: 0;
+            }
+
+            .grid {
+                grid-template-columns: 1fr;
+                gap: 24px;
+            }
+
+            .map-container {
+                height: 300px;
+                order: -1;
+            }
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container">
+        <div class="grid">
+            <div class="sidebar">
+                <div>
+                    <h1 class="title">Coverage <span class="accent">Checker</span></h1>
+                    <p class="subtitle">Check network coverage availability instantly</p>
+                </div>
+
+                <div style="display: flex; flex-direction: column; gap: 12px;">
+                    <div class="form-group">
+                        <label class="label">Location link</label>
+                        <div class="input-wrapper">
+                            <input type="text" id="mapLink" class="input" placeholder="Paste the location link here"
+                                autocomplete="off">
+                            <div class="input-footer">
+                                <span id="statusText" class="status">Ready</span>
+                                <span id="coordsText" class="coords">0.000, 0.000</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="label">Country</label>
+                        <div id="countrySelect" class="custom-select">
+                            <input type="text" class="custom-select-input" placeholder="Loading..." disabled
+                                autocomplete="off">
+                            <span class="custom-select-arrow">&#9660;</span>
+                            <div class="custom-select-dropdown">
+                                <div class="custom-select-empty">No results found</div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="label">Coverage Source</label>
+                        <div class="source-selector">
+                            <div class="source-option active" data-source="nperf">
+                                <span>nPerf Map</span>
+                            </div>
+                            <div class="source-option" data-source="gsma">
+                                <span>GSMA Info</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="form-group">
+                        <label class="label">Network Operator</label>
+                        <div id="operatorSelect" class="custom-select">
+                            <input type="text" class="custom-select-input" placeholder="Select a country first" disabled
+                                autocomplete="off">
+                            <span class="custom-select-arrow">&#9660;</span>
+                            <div class="custom-select-dropdown">
+                                <div class="custom-select-empty">No results found</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="actionActions" class="button-group">
+                    <!-- Buttons will be injected here dynamically -->
+                    <div class="btn disabled">Select a network</div>
+                </div>
+            </div>
+
+            <div class="map-container">
+                <div id="map"></div>
+            </div>
+        </div>
+    </div>
+
+    <footer class="footer"><span class="footer-text">Made with love by <span class="accent">Minita
+                (ﾉ◕ヮ◕)ﾉ*:･ﾟ✧</span></span>
+    </footer>
+
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <script>
+        (function () {
+            var COUNTRY_NAMES = { AD: "Andorra", AE: "UAE", AF: "Afghanistan", AG: "Antigua", AL: "Albania", AM: "Armenia", AO: "Angola", AR: "Argentina", AT: "Austria", AU: "Australia", AW: "Aruba", AZ: "Azerbaijan", BA: "Bosnia", BB: "Barbados", BD: "Bangladesh", BE: "Belgium", BF: "Burkina Faso", BG: "Bulgaria", BH: "Bahrain", BI: "Burundi", BJ: "Benin", BL: "St. Barthelemy", BN: "Brunei", BO: "Bolivia", BQ: "Bonaire", BR: "Brazil", BS: "Bahamas", BT: "Bhutan", BW: "Botswana", BY: "Belarus", BZ: "Belize", CA: "Canada", CD: "DR Congo", CF: "Central African Rep.", CG: "Congo", CH: "Switzerland", CI: "Ivory Coast", CL: "Chile", CM: "Cameroon", CN: "China", CO: "Colombia", CR: "Costa Rica", CU: "Cuba", CV: "Cape Verde", CW: "Curacao", CY: "Cyprus", CZ: "Czechia", DE: "Germany", DJ: "Djibouti", DK: "Denmark", DM: "Dominica", DO: "Dominican Rep.", DZ: "Algeria", EC: "Ecuador", EE: "Estonia", EG: "Egypt", ER: "Eritrea", ES: "Spain", ET: "Ethiopia", FI: "Finland", FJ: "Fiji", FO: "Faroe Islands", FR: "France", GA: "Gabon", GB: "UK", GD: "Grenada", GE: "Georgia", GF: "French Guiana", GH: "Ghana", GL: "Greenland", GM: "Gambia", GN: "Guinea", GP: "Guadeloupe", GQ: "Equatorial Guinea", GR: "Greece", GT: "Guatemala", GW: "Guinea-Bissau", GY: "Guyana", HK: "Hong Kong", HN: "Honduras", HR: "Croatia", HT: "Haiti", HU: "Hungary", ID: "Indonesia", IE: "Ireland", IL: "Israel", IN: "India", IQ: "Iraq", IR: "Iran", IS: "Iceland", IT: "Italy", JM: "Jamaica", JO: "Jordan", JP: "Japan", KE: "Kenya", KG: "Kyrgyzstan", KH: "Cambodia", KM: "Comoros", KN: "St. Kitts", KP: "North Korea", KR: "South Korea", KW: "Kuwait", KZ: "Kazakhstan", LA: "Laos", LB: "Lebanon", LC: "St. Lucia", LI: "Liechtenstein", LK: "Sri Lanka", LR: "Liberia", LS: "Lesotho", LT: "Lithuania", LU: "Luxembourg", LV: "Latvia", LY: "Libya", MA: "Morocco", MC: "Monaco", MD: "Moldova", ME: "Montenegro", MF: "St. Martin", MG: "Madagascar", MK: "North Macedonia", ML: "Mali", MM: "Myanmar", MN: "Mongolia", MO: "Macau", MQ: "Martinique", MR: "Mauritania", MT: "Malta", MU: "Mauritius", MV: "Maldives", MW: "Malawi", MX: "Mexico", MY: "Malaysia", MZ: "Mozambique", NA: "Namibia", NC: "New Caledonia", NE: "Niger", NG: "Nigeria", NI: "Nicaragua", NL: "Netherlands", NO: "Norway", NP: "Nepal", NZ: "New Zealand", OM: "Oman", PA: "Panama", PE: "Peru", PF: "French Polynesia", PG: "Papua New Guinea", PH: "Philippines", PK: "Pakistan", PL: "Poland", PR: "Puerto Rico", PS: "Palestine", PT: "Portugal", PY: "Paraguay", QA: "Qatar", RE: "Reunion", RO: "Romania", RS: "Serbia", RU: "Russia", RW: "Rwanda", SA: "Saudi Arabia", SB: "Solomon Islands", SC: "Seychelles", SD: "Sudan", SE: "Sweden", SG: "Singapore", SI: "Slovenia", SK: "Slovakia", SL: "Sierra Leone", SM: "San Marino", SN: "Senegal", SO: "Somalia", SR: "Suriname", SS: "South Sudan", ST: "Sao Tome", SV: "El Salvador", SX: "Sint Maarten", SY: "Syria", SZ: "Eswatini", TD: "Chad", TG: "Togo", TH: "Thailand", TJ: "Tajikistan", TL: "Timor-Leste", TM: "Turkmenistan", TN: "Tunisia", TO: "Tonga", TR: "Turkey", TT: "Trinidad", TW: "Taiwan", TZ: "Tanzania", UA: "Ukraine", UG: "Uganda", US: "USA", UY: "Uruguay", UZ: "Uzbekistan", VA: "Vatican", VC: "St. Vincent", VE: "Venezuela", VI: "US Virgin Islands", VN: "Vietnam", VU: "Vanuatu", WS: "Samoa", XK: "Kosovo", YE: "Yemen", YT: "Mayotte", ZA: "South Africa", ZM: "Zambia", ZW: "Zimbabwe" };
+            var NAME_TO_CODE = { "south korea": "KR", "korea": "KR", "japan": "JP", "china": "CN", "taiwan": "TW", "united states": "US", "usa": "US", "united kingdom": "GB", "uk": "GB", "germany": "DE", "france": "FR", "italy": "IT", "spain": "ES", "canada": "CA", "australia": "AU", "brazil": "BR", "mexico": "MX", "india": "IN", "puerto rico": "PR", "vanuatu": "VU" };
+            var territoryExceptions = { PR: { parent: "US", bbox: [17.883, -67.942, 18.515, -65.22] }, VI: { parent: "US", bbox: [17.636, -65.091, 18.579, -64.33] }, AW: { parent: "NL", bbox: [12.373, -70.132, 12.64, -69.8] }, CW: { parent: "NL", bbox: [12, -69.2, 12.3, -68.6] }, BQ: { parent: "NL", bbox: [11.7, -69.3, 13, -64.85] }, SX: { parent: "NL", bbox: [18.02, -63.15, 18.1, -62.98] }, BL: { parent: "FR", bbox: [17.85, -62.9, 17.95, -62.75] }, MF: { parent: "FR", bbox: [18.02, -63.15, 18.1, -62.98] }, GP: { parent: "FR", bbox: [15.8, -61.9, 16.7, -61] }, MQ: { parent: "FR", bbox: [14.39, -61.3, 15.02, -60.7] }, GF: { parent: "FR", bbox: [-6, -54.5, 6.2, -49.5] }, NC: { parent: "FR", bbox: [-23, 164, -19, 167.5] }, PF: { parent: "FR", bbox: [-27, -154, -3, -134] }, RE: { parent: "FR", bbox: [-21.5, 55, -20.5, 55.8] }, YT: { parent: "FR", bbox: [-13, 44, -11, 45] }, HK: { parent: "CN", bbox: [22.1, 113.8, 22.6, 114.5] }, MO: { parent: "CN", bbox: [22.1, 113.5, 22.25, 113.6] } };
+
+            var operatorsData = [], countryMap = {}, currentCoords = null, currentCountryCode = null, currentSource = 'nperf', debounceTimer = null, map, marker;
+            var elMapLink = document.getElementById('mapLink');
+            var elStatus = document.getElementById('statusText');
+            var elCoords = document.getElementById('coordsText');
+            var elNperf = document.getElementById('nperfLink');
+            var elGsma = document.getElementById('gsmaLink');
+            var countrySelectEl = document.getElementById('countrySelect');
+            var operatorSelectEl = document.getElementById('operatorSelect');
+            var sourceOptions = document.querySelectorAll('.source-option');
+            var elMapLink = document.getElementById('mapLink');
+            var elStatus = document.getElementById('statusText');
+            var elCoords = document.getElementById('coordsText');
+            var elNperf = document.getElementById('nperfLink');
+            var elGsma = document.getElementById('gsmaLink');
+            var countrySelectEl = document.getElementById('countrySelect');
+            var operatorSelectEl = document.getElementById('operatorSelect');
+
+            // 1. Esri World Imagery (High-Res Satellite)
+            var esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
+                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
+            });
+
+            // 2. CartoDB Dark Matter Labels (Hybrid Overlay - White Labels)
+            var cartoLabels = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+                subdomains: 'abcd',
+                maxZoom: 20
+            });
+
+            // Initialize map with Hybrid Layers
+            var map = L.map('map', {
+                zoomControl: false,
+                layers: [esriSatellite, cartoLabels], // Satellite Base + Labels Overlay
+                attributionControl: false
+            }).setView([20, 0], 2);
+
+            L.control.zoom({ position: 'topleft' }).addTo(map);
+
+            // Removed Layer Control as requested (Only one map style)
+            // L.control.layers(...) removed
+
+            // Event listeners
+            elMapLink.addEventListener('input', function () { clearTimeout(debounceTimer); debounceTimer = setTimeout(detectLocation, 500); });
+
+            // Source Tab Listeners
+            sourceOptions.forEach(function (opt) {
+                opt.addEventListener('click', function () {
+                    // Update UI
+                    sourceOptions.forEach(function (o) { o.classList.remove('active'); });
+                    this.classList.add('active');
+
+                    // Update State
+                    currentSource = this.dataset.source;
+                    console.log('Switched source to:', currentSource);
+
+                    // Refresh Operator List if country selected
+                    if (currentCountryCode) {
+                        updateOperatorList(currentCountryCode);
+                    }
+                });
+            });
+
+            // Initialize custom selects
+            initCustomSelect(countrySelectEl, onCountryChange);
+            initCustomSelect(operatorSelectEl, onOperatorChange);
+
+            loadOperators();
+
+            function initCustomSelect(container, onChange) {
+                var input = container.querySelector('.custom-select-input');
+                var dropdown = container.querySelector('.custom-select-dropdown');
+                var empty = container.querySelector('.custom-select-empty');
+
+                container._value = '';
+                container._selectedLabel = '';
+                container._onChange = onChange;
+                container._options = [];
+
+                input.addEventListener('focus', function () {
+                    if (input.disabled) return;
+                    container.classList.add('open');
+                    input.select();
+                    filterOptions(container, '');
+                });
+
+                input.addEventListener('input', function () {
+                    container.classList.add('open');
+                    filterOptions(container, input.value);
+                });
+
+                input.addEventListener('blur', function () {
+                    setTimeout(function () {
+                        container.classList.remove('open');
+                        // Restore selected value if nothing new selected
+                        if (container._selectedLabel) {
+                            input.value = container._selectedLabel;
+                        } else {
+                            input.value = '';
+                        }
+                    }, 200);
+                });
+
+                dropdown.addEventListener('mousedown', function (e) {
+                    var option = e.target.closest('.custom-select-option');
+                    if (option) {
+                        e.preventDefault();
+                        selectOption(container, option.dataset.value, option.dataset.label);
+                    }
+                });
+            }
+
+            function filterOptions(container, query) {
+                var dropdown = container.querySelector('.custom-select-dropdown');
+                var empty = container.querySelector('.custom-select-empty');
+                var q = query.toLowerCase().trim();
+                var visible = 0;
+
+                // Clear and rebuild
+                dropdown.innerHTML = '';
+
+                container._options.forEach(function (opt) {
+                    var text = (opt.label + ' ' + (opt.code || '')).toLowerCase();
+                    if (q === '' || text.indexOf(q) !== -1) {
+                        var div = document.createElement('div');
+                        div.className = 'custom-select-option' + (opt.value === container._value ? ' selected' : '');
+                        div.dataset.value = opt.value;
+                        div.dataset.label = opt.label;
+                        div.dataset.data = opt.data || '';
+
+                        // Use custom HTML if provided, otherwise default
+                        if (opt.html) {
+                            div.innerHTML = opt.html;
+                        } else {
+                            div.innerHTML = '<span>' + opt.label + '</span>' + (opt.code ? '<span class="code">' + opt.code + '</span>' : '');
+                        }
+
+                        dropdown.appendChild(div);
+                        visible++;
+                    }
+                });
+
+                if (visible === 0) {
+                    var emptyDiv = document.createElement('div');
+                    emptyDiv.className = 'custom-select-empty show';
+                    emptyDiv.textContent = 'No results found';
+                    dropdown.appendChild(emptyDiv);
+                }
+            }
+
+            function selectOption(container, value, label) {
+                var input = container.querySelector('.custom-select-input');
+                container._value = value;
+                container._selectedLabel = label;
+                input.value = label;
+                container.classList.remove('open');
+
+                if (container._onChange) container._onChange(value);
+            }
+
+            function setSelectOptions(container, options, placeholder) {
+                var input = container.querySelector('.custom-select-input');
+                container._options = options;
+                container._value = '';
+                container._selectedLabel = '';
+                input.value = '';
+                input.placeholder = placeholder;
+                input.disabled = options.length === 0;
+            }
+
+            function setSelectValue(container, value) {
+                for (var i = 0; i < container._options.length; i++) {
+                    if (container._options[i].value === value) {
+                        selectOption(container, value, container._options[i].label);
+                        return;
+                    }
+                }
+            }
+
+            function onCountryChange(value) {
+                currentCountryCode = value;
+                updateOperatorList(value);
+            }
+
+            function updateOperatorList(countryCode) {
+                if (!countryCode || !countryMap[countryCode]) {
+                    setSelectOptions(operatorSelectEl, [], 'Select a country first');
+                    renderActionButtons(null); // Clear buttons
+                    return;
+                }
+
+                // Filter operators based on Current Source
+                console.log('Updating list for:', countryCode, 'Source:', currentSource);
+
+                var allOps = countryMap[countryCode];
+                var filteredOps = [];
+
+                if (currentSource === 'nperf') {
+                    // Show ops that have nPerf ID (GSMA_ prefix means virtual/gsma-only)
+                    filteredOps = allOps.filter(function (op) {
+                        return String(op.operatorId).indexOf('GSMA_') === -1;
+                    });
+                } else {
+                    // Show ops that have GSMA ID
+                    filteredOps = allOps.filter(function (op) {
+                        return !!op.gsmaId;
+                    });
+                }
+
+                var ops = filteredOps.slice().sort(function (a, b) { return a.operatorName.localeCompare(b.operatorName); });
+
+                var options = ops.map(function (op) {
+                    return {
+                        value: op.operatorId,
+                        label: op.operatorName,
+                        html: '<span>' + op.operatorName + '</span>',
+                        data: JSON.stringify(op)
+                    };
+                });
+
+                var placeholder = options.length > 0 ? 'Select a network...' : 'No data for this source';
+                setSelectOptions(operatorSelectEl, options, placeholder);
+
+                // AUTO-PICK: Select first available network
+                if (options.length > 0) {
+                    setSelectValue(operatorSelectEl, options[0].value);
+                } else {
+                    renderActionButtons(null);
+                }
+            }
+
+            function onOperatorChange(value) {
+                if (!value) {
+                    renderActionButtons(null);
+                    return;
+                }
+
+                // Find the operator data
+                var valueStr = String(value);
+                for (var i = 0; i < operatorSelectEl._options.length; i++) {
+                    var opt = operatorSelectEl._options[i];
+                    if (String(opt.value) === valueStr) {
+                        var op = JSON.parse(opt.data);
+                        var name = (op.operatorName || '').replace(/\s+/g, '-').replace(/[^\w-]/g, '');
+                        var lat = currentCoords ? currentCoords.lat : 0;
+                        var lng = currentCoords ? currentCoords.lng : 0;
+
+                        // Calculate URLs
+                        var nperfUrl = 'https://www.nperf.com/en/map/' + currentCountryCode + '/-/' + op.operatorId + '.' + name + '/signal?ll=' + lat + '&lg=' + lng + '&zoom=17';
+                        var gsmaUrl = op.gsmaId ? ('https://www.gsma.com/coverage/#' + op.gsmaId) : '#';
+
+                        // Render Logic
+                        renderActionButtons(op, nperfUrl, gsmaUrl);
+                        return;
+                    }
+                }
+                renderActionButtons(null);
+            }
+
+            function renderActionButtons(op, nperfUrl, gsmaUrl) {
+                var container = document.getElementById('actionActions');
+                container.innerHTML = ''; // Clear
+
+                if (!op) {
+                    container.innerHTML = '<div class="btn disabled">Select a network</div>';
+                    return;
+                }
+
+                if (currentSource === 'nperf') {
+                    var btnMap = document.createElement('a');
+                    btnMap.className = 'btn btn-primary';
+                    btnMap.href = nperfUrl;
+                    btnMap.target = '_blank';
+                    btnMap.innerHTML = 'Check Coverage';
+                    container.appendChild(btnMap);
+                } else {
+                    var btnInfo = document.createElement('a');
+                    btnInfo.className = 'btn btn-primary';
+                    btnInfo.href = gsmaUrl;
+                    btnInfo.target = '_blank';
+                    btnInfo.innerHTML = 'Check Coverage';
+                    container.appendChild(btnInfo);
+                }
+            }
+
+            function loadOperators() {
+                setStatus('Loading data...');
+
+                // ENVIRONMENT CHECK: LOCAL vs GAS
+                var isLocal = (typeof google === 'undefined' || !google.script);
+
+                if (isLocal) {
+                    console.log('Running in LOCAL mode');
+                    fetch('/api/operators')
+                        .then(function (response) { return response.json(); })
+                        .then(function (data) {
+                            handleOperatorsData(data);
+                        })
+                        .catch(function (e) {
+                            setStatus('Error loading local data: ' + e);
+                        });
+                } else {
+                    console.log('Running in APPS SCRIPT mode');
+                    google.script.run
+                        .withSuccessHandler(handleOperatorsData)
+                        .withFailureHandler(function (e) { setStatus('Error: ' + e); })
+                        .getOperators();
+                }
+            }
+
+            function handleOperatorsData(data) {
+                if (!data || !data.length) {
+                    setStatus('No data found');
+                    return;
+                }
+                operatorsData = data;
+
+                // Rebuild map from data
+                countryMap = {};
+                data.forEach(function (op) {
+                    var code = String(op.countryCode || '').toUpperCase().trim();
+                    if (code.length >= 2) {
+                        if (!countryMap[code]) countryMap[code] = [];
+                        countryMap[code].push({
+                            countryCode: code,
+                            operatorName: op.operatorName || '',
+                            operatorId: op.operatorId || '',
+                            link: op.link || '',
+                            gsmaId: op.gsmaId || null
+                        });
+                    }
+                });
+
+                populateCountrySelect();
+                console.log('Operators loaded. Resetting status...');
+                resetStatus();
+            }
+
+            function resetStatus() {
+                var countryCount = Object.keys(countryMap).length;
+                var networkCount = 0;
+                for (var code in countryMap) {
+                    networkCount += countryMap[code].length;
+                }
+                setStatus('Ready - ' + countryCount + ' countries, ' + networkCount + ' networks');
+                elStatus.classList.remove('status-error');
+            }
+
+            function populateCountrySelect() {
+                var codes = Object.keys(countryMap).sort(function (a, b) { return (COUNTRY_NAMES[a] || a).localeCompare(COUNTRY_NAMES[b] || b); });
+                var options = codes.map(function (code) { return { value: code, label: COUNTRY_NAMES[code] || code, code: code }; });
+                setSelectOptions(countrySelectEl, options, 'Select a country...');
+            }
+
+            function updateButton(active) {
+                console.log('updateButton called with:', active, 'currentCoords:', currentCoords);
+                if (active) {
+                    elNperf.classList.remove('disabled');
+                    elNperf.classList.add('active');
+                    console.log('Button enabled, href:', elNperf.href);
+                    // GSMA button state is handled in onOperatorChange based on gsmaId
+                } else {
+                    elNperf.classList.add('disabled');
+                    elNperf.classList.remove('active');
+                    elGsma.classList.add('disabled');
+                    elGsma.classList.remove('active');
+                    elGsma.href = '#';
+                }
+            }
+
+            function detectLocation() {
+                var url = elMapLink.value.trim();
+                if (!url) {
+                    // Reset everything
+                    resetStatus();
+                    elCoords.textContent = '0.000, 0.000';
+                    resetMap();
+                    // Reset country select
+                    var countryInput = countrySelectEl.querySelector('.custom-select-input');
+                    countrySelectEl._value = '';
+                    countrySelectEl._selectedLabel = '';
+                    countryInput.value = '';
+                    currentCountryCode = null;
+                    // Reset operator select
+                    setSelectOptions(operatorSelectEl, [], 'Select a country first');
+                    // Reset action button
+                    renderActionButtons(null);
+                    return;
+                }
+                if (!/^https?:\/\/|www\.|maps\.|goo\.gl|apple/i.test(url)) { setStatus('Enter a valid link'); return; }
+
+                setStatus('Detecting...');
+                var urlCountry = detectCountryFromURL(url);
+
+                if (typeof google !== 'undefined' && google.script) {
+                    google.script.run
+                        .withSuccessHandler(function (result) {
+                            if (result && result.coords) processLocation(result.coords, urlCountry || detectCountryFromURL(result.expandedUrl));
+                            else { var coords = extractCoords(url); if (coords) processLocation(coords, urlCountry); else setStatus('Could not find location'); }
+                        })
+                        .withFailureHandler(function () { var coords = extractCoords(url); if (coords) processLocation(coords, urlCountry); else setStatus('Could not find location'); })
+                        .expandUrl(url);
+                } else {
+                    // LOCAL MODE: Use our API shim
+                    fetch('/api/expand', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ url: url })
+                    })
+                        .then(function (r) { return r.json(); })
+                        .then(function (result) {
+                            if (result && result.coords) processLocation(result.coords, urlCountry || detectCountryFromURL(result.expandedUrl));
+                            else { var coords = extractCoords(url); if (coords) processLocation(coords, urlCountry); else setStatus('Could not find location'); }
+                        })
+                        .catch(function () {
+                            var coords = extractCoords(url);
+                            if (coords) processLocation(coords, urlCountry);
+                            else setStatus('Could not find location');
+                        });
+                }
+            }
+
+            function extractCoords(url) {
+                try { url = decodeURIComponent(url); } catch (e) { }
+                var m, r = /!8m2!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/g, last = null;
+                while ((m = r.exec(url)) !== null) last = m;
+                if (last) return { lat: parseFloat(last[1]), lng: parseFloat(last[2]) };
+                m = url.match(/@(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
+                if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+                m = url.match(/[?&](?:q|ll|sll)=(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
+                if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+                return null;
+            }
+
+            function processLocation(coords, countryHint) {
+                currentCoords = coords;
+                elCoords.textContent = coords.lat.toFixed(3) + ', ' + coords.lng.toFixed(3);
+                map.setView([coords.lat, coords.lng], 17);
+                if (marker) map.removeLayer(marker);
+                marker = L.marker([coords.lat, coords.lng], { icon: L.divIcon({ className: 'custom-pin', html: '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#22c55e" width="36" height="36" style="filter:drop-shadow(0 2px 4px rgba(0,0,0,.5))"><path d="M12 0C7.58 0 4 3.58 4 8c0 5.25 7 13 7.7 13.8.18.2.49.2.66 0C13 21 20 13.25 20 8c0-4.42-3.58-8-8-8zm0 11c-1.66 0-3-1.34-3-3s1.34-3 3-3 3 1.34 3 3-1.34 3-3 3z"/></svg>', iconSize: [36, 36], iconAnchor: [18, 36] }) }).addTo(map);
+                if (countryHint) applyCountry(countryHint); else detectCountryFromAPI(coords.lat, coords.lng);
+            }
+
+            function detectCountryFromURL(url) {
+                if (!url) return null;
+                var m = url.match(/\/place\/([^/@]+)/);
+                if (m) {
+                    var p = decodeURIComponent(m[1].replace(/\+/g, ' ')).toLowerCase();
+                    if (p.indexOf('hong kong') !== -1) return 'HK';
+                    if (p.indexOf('macau') !== -1) return 'MO';
+                    for (var n in NAME_TO_CODE) { if (p.indexOf(n) !== -1) return NAME_TO_CODE[n]; }
+                }
+                return null;
+            }
+
+            function detectCountryFromAPI(lat, lng) {
+                if (lat >= 22 && lat <= 32 && lng >= 24 && lng <= 37) { applyCountry('EG'); return; }
+                fetch('https://nominatim.openstreetmap.org/reverse?format=json&lat=' + lat + '&lon=' + lng + '&zoom=10', { headers: { 'Accept-Language': 'en' } })
+                    .then(function (r) { return r.json(); })
+                    .then(function (d) { if (d && d.address && d.address.country_code) applyCountry(d.address.country_code.toUpperCase()); else setStatus('Select country'); })
+                    .catch(function () { setStatus('Select country'); });
+            }
+
+            function applyCountry(code) {
+                if (currentCoords) {
+                    for (var t in territoryExceptions) {
+                        var e = territoryExceptions[t];
+                        if (e.parent === code && currentCoords.lat >= e.bbox[0] && currentCoords.lat <= e.bbox[2] && currentCoords.lng >= e.bbox[1] && currentCoords.lng <= e.bbox[3]) {
+                            code = t;
+                            break;
+                        }
+                    }
+                }
+
+                // Force uppercase for matching
+                var upperCode = code.toUpperCase();
+
+                if (countryMap[upperCode]) {
+                    setStatus('Detected: ' + (COUNTRY_NAMES[upperCode] || upperCode));
+                    setSelectValue(countrySelectEl, upperCode);
+                } else {
+                    // If you see this, the country is missing from the "Operators" sheet
+                    setStatus('No data for ' + upperCode + '. Please run Update in the Sheet.');
+                }
+            }
+
+            function setStatus(msg) {
+                elStatus.textContent = msg;
+                if (msg.includes('Detecting') || msg.includes('Loading')) {
+                    elStatus.classList.add('animate-pulse');
+                } else {
+                    elStatus.classList.remove('animate-pulse');
+                }
+            }
+            function resetStatus() {
+                var countryCount = Object.keys(countryMap).length;
+                var networkCount = operatorsData.length;
+                if (countryCount > 0) {
+                    setStatus('READY - ' + countryCount + ' COUNTRIES, ' + networkCount + ' NETWORKS');
+                } else {
+                    setStatus('READY');
+                }
+            }
+            function resetMap() { if (marker) { map.removeLayer(marker); marker = null; } map.setView([20, 0], 2); }
+        })();
+    </script>
+</body>
+
+</html>
