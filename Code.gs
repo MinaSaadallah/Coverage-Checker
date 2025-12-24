@@ -59,12 +59,19 @@ function getSpreadsheet() {
 
 /**
  * Fetches operator data - uses smart caching for speed.
- * Priority: 1) Memory cache (6hrs) → 2) Script Properties → 3) Sheet → 4) Live fetch
+ * Priority: 1) Sheet (if has data) → 2) Memory cache → 3) Script Properties → 4) Live fetch
  * @returns {Array} List of operator objects.
  */
 function getOperators() {
   try {
-    // 1. Try memory cache first (fastest - persists ~6 hours)
+    // 1. Try Sheet FIRST (so imports are always used)
+    var sheetData = loadFromSheet();
+    if (sheetData.length > 0) {
+      Logger.log('Loaded from sheet: ' + sheetData.length + ' operators');
+      return sheetData;
+    }
+    
+    // 2. Try memory cache (fastest - persists ~6 hours)
     var cache = CacheService.getScriptCache();
     var cached = cache.get('operators_data');
     if (cached) {
@@ -72,28 +79,17 @@ function getOperators() {
       return JSON.parse(cached);
     }
     
-    // 2. Try Script Properties (persistent storage)
+    // 3. Try Script Properties (persistent storage)
     var props = PropertiesService.getScriptProperties();
     var stored = props.getProperty('operators_json');
     if (stored) {
       var operators = JSON.parse(stored);
-      // Re-cache for fast access
-      cacheOperators(operators);
       Logger.log('Loaded from properties: ' + operators.length + ' operators');
       return operators;
     }
     
-    // 3. Try Sheet (legacy/backup)
-    var sheetData = loadFromSheet();
-    if (sheetData.length > 0) {
-      cacheOperators(sheetData);
-      saveToProperties(sheetData);
-      Logger.log('Loaded from sheet: ' + sheetData.length + ' operators');
-      return sheetData;
-    }
-    
-    // 4. Fetch live (first time setup)
-    Logger.log('No cached data, fetching live...');
+    // 4. Fetch live (first time setup - no sheet, no cache)
+    Logger.log('No data, fetching live...');
     var liveData = fetchAllOperatorsLive();
     if (liveData.length > 0) {
       cacheOperators(liveData);
@@ -197,25 +193,56 @@ function chunkString(str, size) {
 
 /**
  * Fetches operators live from nPerf API (used for initial setup).
- * Only fetches top-priority countries for speed.
+ * Fetches ALL countries for complete data.
  */
 function fetchAllOperatorsLive() {
-  // Fetch only major countries for fast initial load
-  var priorityCountries = [
-    "EG", "US", "GB", "DE", "FR", "ES", "IT", "CA", "AU", "JP", "KR", "CN", "IN", "BR", "MX",
-    "SA", "AE", "TR", "NL", "BE", "CH", "AT", "SE", "NO", "DK", "FI", "PL", "PT", "GR", "RU"
+  // Full list of ISO country codes (208 countries)
+  var allCountries = [
+    "AD", "AE", "AF", "AG", "AI", "AL", "AM", "AO", "AR", "AS", "AT", "AU", "AW", "AZ",
+    "BA", "BB", "BD", "BE", "BF", "BG", "BH", "BI", "BJ", "BL", "BM", "BN", "BO", "BQ", "BR", "BS", "BT", "BW", "BY", "BZ",
+    "CA", "CD", "CF", "CG", "CH", "CI", "CL", "CM", "CN", "CO", "CR", "CU", "CV", "CW", "CY", "CZ",
+    "DE", "DJ", "DK", "DM", "DO", "DZ",
+    "EC", "EE", "EG", "ER", "ES", "ET",
+    "FI", "FJ", "FK", "FM", "FO", "FR",
+    "GA", "GB", "GD", "GE", "GF", "GG", "GH", "GI", "GL", "GM", "GN", "GP", "GQ", "GR", "GT", "GU", "GW", "GY",
+    "HK", "HN", "HR", "HT", "HU",
+    "ID", "IE", "IL", "IM", "IN", "IQ", "IR", "IS", "IT",
+    "JE", "JM", "JO", "JP",
+    "KE", "KG", "KH", "KM", "KN", "KP", "KR", "KW", "KY", "KZ",
+    "LA", "LB", "LC", "LI", "LK", "LR", "LS", "LT", "LU", "LV", "LY",
+    "MA", "MC", "MD", "ME", "MF", "MG", "MH", "MK", "ML", "MM", "MN", "MO", "MP", "MQ", "MR", "MT", "MU", "MV", "MW", "MX", "MY", "MZ",
+    "NA", "NC", "NE", "NG", "NI", "NL", "NO", "NP", "NZ",
+    "OM",
+    "PA", "PE", "PF", "PG", "PH", "PK", "PL", "PR", "PS", "PT", "PW", "PY",
+    "QA",
+    "RE", "RO", "RS", "RU", "RW",
+    "SA", "SB", "SC", "SD", "SE", "SG", "SI", "SK", "SL", "SM", "SN", "SO", "SR", "SS", "ST", "SV", "SX", "SY", "SZ",
+    "TC", "TD", "TG", "TH", "TJ", "TL", "TM", "TN", "TO", "TR", "TT", "TW", "TZ",
+    "UA", "UG", "US", "UY", "UZ",
+    "VA", "VC", "VE", "VG", "VI", "VN", "VU",
+    "WS",
+    "XK",
+    "YE", "YT",
+    "ZA", "ZM", "ZW"
   ];
   
   var allOperators = [];
+  var batchSize = 20; // Process in batches to avoid timeout
   
-  for (var i = 0; i < priorityCountries.length; i++) {
+  for (var i = 0; i < allCountries.length; i++) {
     try {
-      var ops = fetchNperfCountry(priorityCountries[i]);
+      var ops = fetchNperfCountry(allCountries[i]);
       allOperators = allOperators.concat(ops);
     } catch (e) {
       // Continue on error
     }
-    Utilities.sleep(200); // Faster rate for priority countries
+    
+    // Rate limiting: pause every batch to avoid API limits
+    if (i > 0 && i % batchSize === 0) {
+      Utilities.sleep(500);
+    } else {
+      Utilities.sleep(100);
+    }
   }
   
   // Match with GSMA
@@ -237,6 +264,7 @@ function fetchAllOperatorsLive() {
     // GSMA matching optional
   }
   
+  Logger.log('Fetched ' + allOperators.length + ' operators from ' + allCountries.length + ' countries');
   return allOperators;
 }
 

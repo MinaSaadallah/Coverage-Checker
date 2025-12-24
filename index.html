@@ -794,23 +794,22 @@
             var countrySelectEl = document.getElementById('countrySelect');
             var operatorSelectEl = document.getElementById('operatorSelect');
 
-            // 1. Esri World Imagery (High-Res Satellite)
-            var esriSatellite = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}', {
-                attribution: 'Tiles &copy; Esri &mdash; Source: Esri, i-cubed, USDA, USGS, AEX, GeoEye, Getmapping, Aerogrid, IGN, IGP, UPR-EGP, and the GIS User Community'
-            });
-
-            // 2. CartoDB Dark Matter Labels (Hybrid Overlay - White Labels)
-            var cartoLabels = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_only_labels/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors &copy; <a href="https://carto.com/attributions">CARTO</a>',
+            // 1. CartoDB Dark Matter (High-Contrast Dark Map)
+            var darkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
                 subdomains: 'abcd',
                 maxZoom: 20
             });
 
-            // Initialize map with Hybrid Layers
+            // Initialize map with Dark Style
             var map = L.map('map', {
                 zoomControl: false,
-                layers: [esriSatellite, cartoLabels], // Satellite Base + Labels Overlay
-                attributionControl: false
+                layers: [darkMatter],
+                attributionControl: false,
+                minZoom: 2,
+                worldCopyJump: true,
+                maxBounds: [[-85, -Infinity], [85, Infinity]],
+                maxBoundsViscosity: 1.0
             }).setView([20, 0], 2);
 
             L.control.zoom({ position: 'topleft' }).addTo(map);

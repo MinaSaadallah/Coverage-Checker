@@ -188,7 +188,11 @@ function extractCoords(url) {
     match = url.match(/[?&]coordinate=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
     if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
 
-    // Priority 4: @ viewport (less accurate)
+    // Priority 4: Query params (q=, ll=)
+    match = url.match(/[?&](?:q|ll|sll)=(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
+    if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+
+    // Priority 5: @ viewport (less accurate)
     match = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
     if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
 
@@ -199,7 +203,7 @@ function extractCoordsFromHtml(html) {
     // Basic regex for apple maps meta tags
     const latMatch = html.match(/property=["']place:location:latitude["']\s+content=["'](-?\d+\.?\d*)["']/);
     const lngMatch = html.match(/property=["']place:location:longitude["']\s+content=["'](-?\d+\.?\d*)["']/);
-    if (latMatch && lngMatch) return { lat: parseFloat(latMatch[1]), lng: parseFloat(lngMatch[1]) };
+    if (latMatch && lngMatch) return { lat: parseFloat(latMatch[1]), lng: parseFloat(lngMatch[2]) };
 
     // Center regex
     const centerMatch = html.match(/"center":\s*\[\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\]/);
