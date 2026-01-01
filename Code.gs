@@ -11,7 +11,7 @@
 // Option 2: If running as a STANDALONE script, paste your spreadsheet ID here:
 //           (Find it in the Google Sheet URL: https://docs.google.com/spreadsheets/d/YOUR_ID_HERE/edit)
 
-var SPREADSHEET_ID = '';  // ← Paste your spreadsheet ID here (only if standalone)
+var SPREADSHEET_ID = '1byFsl37OEaHYjYEV2ObVWDoHC_VrBB0RSS9tet1s59E';  // ← Paste your spreadsheet ID here (only if standalone)
 
 // ============================================================
 // WEB APP HANDLER
@@ -64,32 +64,42 @@ function getSpreadsheet() {
  */
 function getOperators() {
   try {
-    // 1. Try Sheet FIRST (so imports are always used)
+    // 1. Try Sheet FIRST
     var sheetData = loadFromSheet();
     if (sheetData.length > 0) {
       Logger.log('Loaded from sheet: ' + sheetData.length + ' operators');
       return sheetData;
     }
     
-    // 2. Try memory cache (fastest - persists ~6 hours)
+    // 2. Try memory cache
     var cache = CacheService.getScriptCache();
     var cached = cache.get('operators_data');
     if (cached) {
-      Logger.log('Loaded from cache');
-      return JSON.parse(cached);
+      var parsedCache = JSON.parse(cached);
+      // CHECK: If cache is empty, ignore it and force refresh
+      if (parsedCache && parsedCache.length > 0) {
+        Logger.log('Loaded from cache');
+        return parsedCache;
+      }
     }
     
-    // 3. Try Script Properties (persistent storage)
+    // 3. Try Script Properties
     var props = PropertiesService.getScriptProperties();
     var stored = props.getProperty('operators_json');
     if (stored) {
       var operators = JSON.parse(stored);
-      Logger.log('Loaded from properties: ' + operators.length + ' operators');
-      return operators;
+      // CHECK: If properties are empty, ignore them
+      if (operators && operators.length > 0) {
+        Logger.log('Loaded from properties: ' + operators.length + ' operators');
+        return operators;
+      }
     }
     
-    // 4. Fetch live (first time setup - no sheet, no cache)
-    Logger.log('No data, fetching live...');
+    // 4. Force a Fresh Start (Clear bad data automatically)
+    Logger.log('No valid data found. Clearing cache and fetching live...');
+    clearCacheAndProperties(); // Run your cleaner function automatically here!
+    
+    // 5. Fetch live
     var liveData = fetchAllOperatorsLive();
     if (liveData.length > 0) {
       cacheOperators(liveData);
@@ -97,9 +107,7 @@ function getOperators() {
       return liveData;
     }
     
-    Logger.log('No data available');
     return [];
-    
   } catch (e) {
     Logger.log('Error in getOperators: ' + e.toString());
     return [];
@@ -1475,4 +1483,33 @@ function setupMonthlyRefreshTrigger() {
   SpreadsheetApp.getUi().alert('Monthly Refresh Enabled', 
     'Operator data will automatically refresh on the 1st of each month at 4am.',
     SpreadsheetApp.getUi().ButtonSet.OK);
+}
+
+function clearCacheAndProperties() {
+  CacheService.getScriptCache().removeAll([]);
+  PropertiesService.getScriptProperties().deleteAllProperties();
+  Logger.log('Cache and properties cleared');
+}
+
+/**
+ * Run this function ONCE to set up the automatic cleaner.
+ * It will run clearCacheAndProperties every day at 1 AM.
+ */
+function setupAutoCleaner() {
+  // First, delete any existing triggers to prevent duplicates
+  var triggers = ScriptApp.getProjectTriggers();
+  for (var i = 0; i < triggers.length; i++) {
+    if (triggers[i].getHandlerFunction() === 'clearCacheAndProperties') {
+      ScriptApp.deleteTrigger(triggers[i]);
+    }
+  }
+  
+  // Create a new daily trigger
+  ScriptApp.newTrigger('clearCacheAndProperties')
+    .timeBased()
+    .everyDays(1)
+    .atHour(1) // Runs at 1 AM
+    .create();
+    
+  Logger.log('Automatic cleaner installed.');
 }
