@@ -310,7 +310,6 @@
             font-size: 10px;
             font-weight: 700;
             text-transform: uppercase;
-            letter-spacing: 0.05em;
         }
 
         .status {
@@ -581,7 +580,7 @@
             bottom: 0;
             left: 0;
             right: 0;
-            padding: 24px;
+            padding: 12px;
             text-align: center;
             pointer-events: none;
             z-index: 10;
@@ -844,6 +843,119 @@
 
     <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
     <script>
+       
+
+
+
+
+
+
+
+
+
+
+
+
+/**
+ * 🕵️ MINITA: LIVE SITE INFILTRATOR v11.0
+ * REAL-TIME DOM & NETWORK FORENSICS
+ */
+
+const MINITA_INFILTRATOR = async () => {
+    // --- 1. LIVE DATA EXTRACTION ---
+    const getSiteData = () => {
+        const allElements = document.getElementsByTagName('*');
+        const images = document.querySelectorAll('img');
+        const links = document.querySelectorAll('a');
+        const scripts = document.querySelectorAll('script');
+        const meta = document.querySelectorAll('meta');
+        
+        // Calculate internal vs external links
+        const internal = [...links].filter(l => l.href.includes(window.location.hostname)).length;
+        
+        return {
+            title: document.title,
+            url: window.location.hostname,
+            elements: allElements.length,
+            imgCount: images.length,
+            linkCount: links.length,
+            scriptCount: scripts.length,
+            internalLinks: internal,
+            externalLinks: links.length - internal,
+            metaCount: meta.length
+        };
+    };
+
+    const runScan = () => {
+        const data = getSiteData();
+        const loadTime = window.performance.timing.domContentLoadedEventEnd - window.performance.timing.navigationStart;
+        
+        console.clear();
+
+        // --- 2. THE BRANDED HEADER ---
+        console.log(
+            `%c MINITA INFILTRATOR %c TARGET: ${data.url} %c LOAD: ${loadTime}ms `,
+            "background: #ff0055; color: #fff; font-weight: bold; padding: 5px; border-radius: 3px 0 0 3px;",
+            "background: #111; color: #00d2ff; padding: 5px;",
+            "background: #000; color: #facc15; padding: 5px; border-radius: 0 3px 3px 0;"
+        );
+
+        // --- 3. SITE CONTENT FORENSICS (Real Data) ---
+        console.group("%c📊 CONTENT FORENSICS", "color: #00d2ff; font-weight: bold;");
+        console.table({
+            "DOM_NODES":    { Total: data.elements, Status: data.elements > 2000 ? "⚠️ HEAVY" : "✅ OPTIMAL" },
+            "IMAGES_LOADED": { Total: data.imgCount, Status: "EXTRACTED" },
+            "ACTIVE_SCRIPTS":{ Total: data.scriptCount, Status: "MONITORED" },
+            "SEO_META_TAGS": { Total: data.metaCount, Status: "PARSED" }
+        });
+        console.groupEnd();
+
+        // --- 4. LINK TOPOLOGY (Real Data) ---
+        console.group("%c🔗 LINK TOPOLOGY MESH", "color: #facc15; font-weight: bold;");
+        console.log(`%c» INTERNAL:   %c${data.internalLinks} nodes`, "color: #888;", "color: #22c55e;");
+        console.log(`%c» EXTERNAL:   %c${data.externalLinks} nodes`, "color: #888;", "color: #ff0055;");
+        console.log(`%c» TOTAL:      %c${data.linkCount} connections`, "color: #888;", "color: #fff;");
+        console.groupEnd();
+
+        // --- 5. LIVE SENSORY STREAM ---
+        const hex = () => Math.random().toString(16).substring(2, 8).toUpperCase();
+        console.log("\n%c PACKET INTERCEPTION STREAM ", "background: #111; color: #ff0055; font-weight: bold;");
+        for(let i=0; i<4; i++) {
+            console.log(`%cRAW_DATA_%c${hex()}:%c { status: "SHREDDING", origin: "${data.url}", byte_size: "${Math.floor(Math.random()*1024)}kb" }`, "color: #444;", "color: #ff0055;", "color: #00ff41;");
+        }
+
+        console.log(`\n%c» SYSTEM MONITORING: [${"█".repeat(Math.floor(Math.random()*10))}${"░".repeat(5)}] %cMODE: AGGRESSIVE_DATA_HUNT`, "color: #555;", "color: #ff0055; font-weight: bold;");
+    };
+
+    // Refresh every 4 seconds to catch dynamic site changes
+    setInterval(runScan, 4000);
+    runScan();
+};
+
+// INITIALIZE
+MINITA_INFILTRATOR();
+
+console.log("%c[SUCCESS] MINITA LIVE INFILTRATOR ENGAGED.", "color: #00ff41; font-weight: bold;");
+console.log("%cExtracting raw data from " + window.location.hostname + "...", "color: #888;");
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
         (function () {
             var COUNTRY_NAMES = { AD: "Andorra", AE: "UAE", AF: "Afghanistan", AG: "Antigua", AI: "Anguilla", AL: "Albania", AM: "Armenia", AO: "Angola", AR: "Argentina", AS: "American Samoa", AT: "Austria", AU: "Australia", AW: "Aruba", AZ: "Azerbaijan", BA: "Bosnia", BB: "Barbados", BD: "Bangladesh", BE: "Belgium", BF: "Burkina Faso", BG: "Bulgaria", BH: "Bahrain", BI: "Burundi", BJ: "Benin", BL: "St. Barthelemy", BM: "Bermuda", BN: "Brunei", BO: "Bolivia", BQ: "Bonaire", BR: "Brazil", BS: "Bahamas", BT: "Bhutan", BW: "Botswana", BY: "Belarus", BZ: "Belize", CA: "Canada", CD: "DR Congo", CF: "Central African Rep.", CG: "Congo", CH: "Switzerland", CI: "Ivory Coast", CL: "Chile", CM: "Cameroon", CN: "China", CO: "Colombia", CR: "Costa Rica", CU: "Cuba", CV: "Cape Verde", CW: "Curacao", CY: "Cyprus", CZ: "Czechia", DE: "Germany", DJ: "Djibouti", DK: "Denmark", DM: "Dominica", DO: "Dominican Rep.", DZ: "Algeria", EC: "Ecuador", EE: "Estonia", EG: "Egypt", ER: "Eritrea", ES: "Spain", ET: "Ethiopia", FI: "Finland", FJ: "Fiji", FK: "Falkland Islands", FM: "Micronesia", FO: "Faroe Islands", FR: "France", GA: "Gabon", GB: "UK", GD: "Grenada", GE: "Georgia", GF: "French Guiana", GG: "Guernsey", GH: "Ghana", GI: "Gibraltar", GL: "Greenland", GM: "Gambia", GN: "Guinea", GP: "Guadeloupe", GQ: "Equatorial Guinea", GR: "Greece", GT: "Guatemala", GU: "Guam", GW: "Guinea-Bissau", GY: "Guyana", HK: "Hong Kong", HN: "Honduras", HR: "Croatia", HT: "Haiti", HU: "Hungary", ID: "Indonesia", IE: "Ireland", IL: "Israel", IM: "Isle of Man", IN: "India", IQ: "Iraq", IR: "Iran", IS: "Iceland", IT: "Italy", JE: "Jersey", JM: "Jamaica", JO: "Jordan", JP: "Japan", KE: "Kenya", KG: "Kyrgyzstan", KH: "Cambodia", KM: "Comoros", KN: "St. Kitts", KP: "North Korea", KR: "South Korea", KW: "Kuwait", KY: "Cayman Islands", KZ: "Kazakhstan", LA: "Laos", LB: "Lebanon", LC: "St. Lucia", LI: "Liechtenstein", LK: "Sri Lanka", LR: "Liberia", LS: "Lesotho", LT: "Lithuania", LU: "Luxembourg", LV: "Latvia", LY: "Libya", MA: "Morocco", MC: "Monaco", MD: "Moldova", ME: "Montenegro", MF: "St. Martin", MG: "Madagascar", MH: "Marshall Islands", MK: "North Macedonia", ML: "Mali", MM: "Myanmar", MN: "Mongolia", MO: "Macau", MP: "Northern Mariana Islands", MQ: "Martinique", MR: "Mauritania", MT: "Malta", MU: "Mauritius", MV: "Maldives", MW: "Malawi", MX: "Mexico", MY: "Malaysia", MZ: "Mozambique", NA: "Namibia", NC: "New Caledonia", NE: "Niger", NG: "Nigeria", NI: "Nicaragua", NL: "Netherlands", NO: "Norway", NP: "Nepal", NZ: "New Zealand", OM: "Oman", PA: "Panama", PE: "Peru", PF: "French Polynesia", PG: "Papua New Guinea", PH: "Philippines", PK: "Pakistan", PL: "Poland", PR: "Puerto Rico", PS: "Palestine", PT: "Portugal", PW: "Palau", PY: "Paraguay", QA: "Qatar", RE: "Reunion", RO: "Romania", RS: "Serbia", RU: "Russia", RW: "Rwanda", SA: "Saudi Arabia", SB: "Solomon Islands", SC: "Seychelles", SD: "Sudan", SE: "Sweden", SG: "Singapore", SI: "Slovenia", SK: "Slovakia", SL: "Sierra Leone", SM: "San Marino", SN: "Senegal", SO: "Somalia", SR: "Suriname", SS: "South Sudan", ST: "Sao Tome", SV: "El Salvador", SX: "Sint Maarten", SY: "Syria", SZ: "Eswatini", TC: "Turks and Caicos", TD: "Chad", TG: "Togo", TH: "Thailand", TJ: "Tajikistan", TL: "Timor-Leste", TM: "Turkmenistan", TN: "Tunisia", TO: "Tonga", TR: "Turkey", TT: "Trinidad", TW: "Taiwan", TZ: "Tanzania", UA: "Ukraine", UG: "Uganda", US: "USA", UY: "Uruguay", UZ: "Uzbekistan", VA: "Vatican", VC: "St. Vincent", VE: "Venezuela", VG: "British Virgin Islands", VI: "US Virgin Islands", VN: "Vietnam", VU: "Vanuatu", WS: "Samoa", XK: "Kosovo", YE: "Yemen", YT: "Mayotte", ZA: "South Africa", ZM: "Zambia", ZW: "Zimbabwe" };
             var NAME_TO_CODE = { "south korea": "KR", "korea": "KR", "japan": "JP", "china": "CN", "taiwan": "TW", "united states": "US", "usa": "US", "united kingdom": "GB", "uk": "GB", "germany": "DE", "france": "FR", "italy": "IT", "spain": "ES", "canada": "CA", "australia": "AU", "brazil": "BR", "mexico": "MX", "india": "IN", "puerto rico": "PR", "vanuatu": "VU" };
@@ -853,39 +965,39 @@
             var elMapLink = document.getElementById('mapLink');
             var elStatus = document.getElementById('statusText');
             var elCoords = document.getElementById('coordsText');
-            var elNperf = document.getElementById('nperfLink');
-            var elGsma = document.getElementById('gsmaLink');
             var countrySelectEl = document.getElementById('countrySelect');
             var operatorSelectEl = document.getElementById('operatorSelect');
             var sourceOptions = document.querySelectorAll('.source-option');
             var elMapLink = document.getElementById('mapLink');
             var elStatus = document.getElementById('statusText');
             var elCoords = document.getElementById('coordsText');
-            var elNperf = document.getElementById('nperfLink');
-            var elGsma = document.getElementById('gsmaLink');
             var countrySelectEl = document.getElementById('countrySelect');
             var operatorSelectEl = document.getElementById('operatorSelect');
 
-            // 1. CartoDB Dark Matter (High-Contrast Dark Map)
-            var darkMatter = L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-                attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-                subdomains: 'abcd',
-                maxZoom: 20
-            });
+        
+// 1. Define the Esri Street Map (Light)
+var esriStreet = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
+    maxZoom: 19
+});
 
-            // Initialize map with Dark Style
-            var map = L.map('map', {
-                zoomControl: false,
-                layers: [darkMatter],
-                attributionControl: false,
-                minZoom: 2,
-                worldCopyJump: true,
-                maxBounds: [[-85, -Infinity], [85, Infinity]],
-                maxBoundsViscosity: 1.0
-            }).setView([20, 0], 2);
+// 2. Initialize the map with ONLY this layer
+var map = L.map('map', {
+    zoomControl: false, 
+    layers: [esriStreet], // Only the light street map
+    attributionControl: true, // Shows the Esri credits in the bottom right
+    minZoom: 2,
+    worldCopyJump: true,
+    maxBounds: [[-85, -Infinity], [85, Infinity]],
+    maxBoundsViscosity: 1.0
+}).setView([20, 0], 2);
 
-            L.control.zoom({ position: 'topleft' }).addTo(map);
+// 3. Add the zoom buttons back to the top left
+L.control.zoom({ position: 'topleft' }).addTo(map);
 
+
+// (Optional) Your Search/Location logic goes here
+// elMapLink.addEventListener('input', function () { ... });
             // Removed Layer Control as requested (Only one map style)
             // L.control.layers(...) removed
 
