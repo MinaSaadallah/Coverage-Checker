@@ -316,6 +316,11 @@
             color: var(--accent-color);
         }
 
+        .status.status-error {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
         .coords {
             color: var(--text-secondary);
             opacity: 0.7;
@@ -856,88 +861,6 @@
 
 
 
-/**
- * 🕵️ MINITA: LIVE SITE INFILTRATOR v11.0
- * REAL-TIME DOM & NETWORK FORENSICS
- */
-
-const MINITA_INFILTRATOR = async () => {
-    // --- 1. LIVE DATA EXTRACTION ---
-    const getSiteData = () => {
-        const allElements = document.getElementsByTagName('*');
-        const images = document.querySelectorAll('img');
-        const links = document.querySelectorAll('a');
-        const scripts = document.querySelectorAll('script');
-        const meta = document.querySelectorAll('meta');
-        
-        // Calculate internal vs external links
-        const internal = [...links].filter(l => l.href.includes(window.location.hostname)).length;
-        
-        return {
-            title: document.title,
-            url: window.location.hostname,
-            elements: allElements.length,
-            imgCount: images.length,
-            linkCount: links.length,
-            scriptCount: scripts.length,
-            internalLinks: internal,
-            externalLinks: links.length - internal,
-            metaCount: meta.length
-        };
-    };
-
-    const runScan = () => {
-        const data = getSiteData();
-        const loadTime = window.performance.timing.domContentLoadedEventEnd - window.performance.timing.navigationStart;
-        
-        console.clear();
-
-        // --- 2. THE BRANDED HEADER ---
-        console.log(
-            `%c MINITA INFILTRATOR %c TARGET: ${data.url} %c LOAD: ${loadTime}ms `,
-            "background: #ff0055; color: #fff; font-weight: bold; padding: 5px; border-radius: 3px 0 0 3px;",
-            "background: #111; color: #00d2ff; padding: 5px;",
-            "background: #000; color: #facc15; padding: 5px; border-radius: 0 3px 3px 0;"
-        );
-
-        // --- 3. SITE CONTENT FORENSICS (Real Data) ---
-        console.group("%c📊 CONTENT FORENSICS", "color: #00d2ff; font-weight: bold;");
-        console.table({
-            "DOM_NODES":    { Total: data.elements, Status: data.elements > 2000 ? "⚠️ HEAVY" : "✅ OPTIMAL" },
-            "IMAGES_LOADED": { Total: data.imgCount, Status: "EXTRACTED" },
-            "ACTIVE_SCRIPTS":{ Total: data.scriptCount, Status: "MONITORED" },
-            "SEO_META_TAGS": { Total: data.metaCount, Status: "PARSED" }
-        });
-        console.groupEnd();
-
-        // --- 4. LINK TOPOLOGY (Real Data) ---
-        console.group("%c🔗 LINK TOPOLOGY MESH", "color: #facc15; font-weight: bold;");
-        console.log(`%c» INTERNAL:   %c${data.internalLinks} nodes`, "color: #888;", "color: #22c55e;");
-        console.log(`%c» EXTERNAL:   %c${data.externalLinks} nodes`, "color: #888;", "color: #ff0055;");
-        console.log(`%c» TOTAL:      %c${data.linkCount} connections`, "color: #888;", "color: #fff;");
-        console.groupEnd();
-
-        // --- 5. LIVE SENSORY STREAM ---
-        const hex = () => Math.random().toString(16).substring(2, 8).toUpperCase();
-        console.log("\n%c PACKET INTERCEPTION STREAM ", "background: #111; color: #ff0055; font-weight: bold;");
-        for(let i=0; i<4; i++) {
-            console.log(`%cRAW_DATA_%c${hex()}:%c { status: "SHREDDING", origin: "${data.url}", byte_size: "${Math.floor(Math.random()*1024)}kb" }`, "color: #444;", "color: #ff0055;", "color: #00ff41;");
-        }
-
-        console.log(`\n%c» SYSTEM MONITORING: [${"█".repeat(Math.floor(Math.random()*10))}${"░".repeat(5)}] %cMODE: AGGRESSIVE_DATA_HUNT`, "color: #555;", "color: #ff0055; font-weight: bold;");
-    };
-
-    // Refresh every 4 seconds to catch dynamic site changes
-    setInterval(runScan, 4000);
-    runScan();
-};
-
-// INITIALIZE
-MINITA_INFILTRATOR();
-
-console.log("%c[SUCCESS] MINITA LIVE INFILTRATOR ENGAGED.", "color: #00ff41; font-weight: bold;");
-console.log("%cExtracting raw data from " + window.location.hostname + "...", "color: #888;");
-
 
 
 
@@ -968,38 +891,31 @@ console.log("%cExtracting raw data from " + window.location.hostname + "...", "c
             var countrySelectEl = document.getElementById('countrySelect');
             var operatorSelectEl = document.getElementById('operatorSelect');
             var sourceOptions = document.querySelectorAll('.source-option');
-            var elMapLink = document.getElementById('mapLink');
-            var elStatus = document.getElementById('statusText');
-            var elCoords = document.getElementById('coordsText');
-            var countrySelectEl = document.getElementById('countrySelect');
-            var operatorSelectEl = document.getElementById('operatorSelect');
 
-        
-// 1. Define the Esri Street Map (Light)
-var esriStreet = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
-    maxZoom: 19
-});
+            // 1. Initialize Leaflet map (wrapped in try-catch for environments where Leaflet isn't loaded)
+            try {
+    // Define the Esri Street Map (Light)
+    var esriStreet = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
+        maxZoom: 19
+    });
 
-// 2. Initialize the map with ONLY this layer
-var map = L.map('map', {
-    zoomControl: false, 
-    layers: [esriStreet], // Only the light street map
-    attributionControl: true, // Shows the Esri credits in the bottom right
-    minZoom: 2,
-    worldCopyJump: true,
-    maxBounds: [[-85, -Infinity], [85, Infinity]],
-    maxBoundsViscosity: 1.0
-}).setView([20, 0], 2);
+    // Initialize the map with ONLY this layer
+    map = L.map('map', {
+        zoomControl: false, 
+        layers: [esriStreet], // Only the light street map
+        attributionControl: true, // Shows the Esri credits in the bottom right
+        minZoom: 2,
+        worldCopyJump: true,
+        maxBounds: [[-85, -Infinity], [85, Infinity]],
+        maxBoundsViscosity: 1.0
+    }).setView([20, 0], 2);
 
-// 3. Add the zoom buttons back to the top left
-L.control.zoom({ position: 'topleft' }).addTo(map);
-
-
-// (Optional) Your Search/Location logic goes here
-// elMapLink.addEventListener('input', function () { ... });
-            // Removed Layer Control as requested (Only one map style)
-            // L.control.layers(...) removed
+    // Add the zoom buttons back to the top left
+    L.control.zoom({ position: 'topleft' }).addTo(map);
+} catch (e) {
+    // Map initialization failed (library may not be loaded)
+}
 
             // Event listeners
             elMapLink.addEventListener('input', function () { clearTimeout(debounceTimer); debounceTimer = setTimeout(detectLocation, 500); });
@@ -1247,47 +1163,76 @@ L.control.zoom({ position: 'topleft' }).addTo(map);
                 var isLocal = (typeof google === 'undefined' || !google.script);
 
                 if (isLocal) {
+                    // Local mode - use fetch API
                     fetch('/api/operators')
-                        .then(function (response) { return response.json(); })
+                        .then(function (response) {
+                            if (!response.ok) {
+                                throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                            }
+                            return response.json();
+                        })
                         .then(function (data) {
                             handleOperatorsData(data);
                         })
                         .catch(function (e) {
-                            setStatus('Error loading local data: ' + e);
+                            setStatus('✗ Error loading data');
+                            elStatus.classList.add('status-error');
+                            // Show user-friendly error
+                            alert('Failed to load operator data. Please check:\n1. Server is running (npm start)\n2. operators.json exists\n3. Check browser console for details');
                         });
                 } else {
+                    // Google Apps Script mode
                     google.script.run
-                        .withSuccessHandler(handleOperatorsData)
-                        .withFailureHandler(function (e) { setStatus('Error: ' + e); })
+                        .withSuccessHandler(function(data) {
+                            handleOperatorsData(data);
+                        })
+                        .withFailureHandler(function (e) {
+                            setStatus('✗ Error loading data');
+                            elStatus.classList.add('status-error');
+                            // Show user-friendly error
+                            alert('Failed to load operator data. Please check:\n1. Code.gs is deployed correctly\n2. import.gs file exists\n3. Run testGetOperators() in Apps Script to debug');
+                        })
                         .getOperators();
                 }
             }
 
             function handleOperatorsData(data) {
-                if (!data || !data.length) {
-                    setStatus('No data found');
-                    return;
-                }
-                operatorsData = data;
-
-                // Rebuild map from data
-                countryMap = {};
-                data.forEach(function (op) {
-                    var code = String(op.countryCode || '').toUpperCase().trim();
-                    if (code.length >= 2) {
-                        if (!countryMap[code]) countryMap[code] = [];
-                        countryMap[code].push({
-                            countryCode: code,
-                            operatorName: op.operatorName || '',
-                            operatorId: op.operatorId || '',
-                            link: op.link || '',
-                            gsmaId: op.gsmaId || null
-                        });
+                try {
+                    if (!data || !data.length) {
+                        setStatus('⚠ No data loaded - Check Code.gs');
+                        elStatus.classList.add('status-error');
+                        return;
                     }
-                });
+                    operatorsData = data;
 
-                populateCountrySelect();
-                resetStatus();
+                    // Rebuild map from data
+                    countryMap = {};
+                    data.forEach(function (op) {
+                        var code = String(op.countryCode || '').toUpperCase().trim();
+                        if (code.length >= 2) {
+                            if (!countryMap[code]) countryMap[code] = [];
+                            countryMap[code].push({
+                                countryCode: code,
+                                operatorName: op.operatorName || '',
+                                operatorId: op.operatorId || '',
+                                link: op.link || '',
+                                gsmaId: op.gsmaId || null
+                            });
+                        }
+                    });
+
+                    if (Object.keys(countryMap).length === 0) {
+                        setStatus('⚠ No valid country data found');
+                        elStatus.classList.add('status-error');
+                        return;
+                    }
+
+                    populateCountrySelect();
+                    resetStatus();
+                } catch (e) {
+                    setStatus('✗ Error processing data');
+                    elStatus.classList.add('status-error');
+                }
             }
 
             function resetStatus() {
@@ -1296,7 +1241,7 @@ L.control.zoom({ position: 'topleft' }).addTo(map);
                 for (var code in countryMap) {
                     networkCount += countryMap[code].length;
                 }
-                setStatus('Ready - ' + countryCount + ' countries, ' + networkCount + ' networks');
+                setStatus('READY - ' + countryCount + ' COUNTRIES, ' + networkCount + ' NETWORKS');
                 elStatus.classList.remove('status-error');
             }
 

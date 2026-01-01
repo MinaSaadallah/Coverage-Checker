@@ -58,8 +58,9 @@ function getSpreadsheet() {
 // ============================================================
 
 /**
- * Fetches operator data - uses smart caching for speed.
- * Priority: 1) Sheet (if has data) → 2) Memory cache → 3) Script Properties → 4) Live fetch
+ * Fetches operator data - uses smart caching for speed with guaranteed fallback.
+ * Priority: 1) Sheet (if has data) → 2) Memory cache → 3) Script Properties → 4) import.gs fallback
+ * Live fetch is never blocking - it runs in background only.
  * @returns {Array} List of operator objects.
  */
 function getOperators() {
@@ -67,7 +68,7 @@ function getOperators() {
     // 1. Try Sheet FIRST
     var sheetData = loadFromSheet();
     if (sheetData.length > 0) {
-      Logger.log('Loaded from sheet: ' + sheetData.length + ' operators');
+      Logger.log('✓ Loaded from sheet: ' + sheetData.length + ' operators');
       return sheetData;
     }
     
@@ -75,11 +76,14 @@ function getOperators() {
     var cache = CacheService.getScriptCache();
     var cached = cache.get('operators_data');
     if (cached) {
-      var parsedCache = JSON.parse(cached);
-      // CHECK: If cache is empty, ignore it and force refresh
-      if (parsedCache && parsedCache.length > 0) {
-        Logger.log('Loaded from cache');
-        return parsedCache;
+      try {
+        var parsedCache = JSON.parse(cached);
+        if (parsedCache && parsedCache.length > 0) {
+          Logger.log('✓ Loaded from cache: ' + parsedCache.length + ' operators');
+          return parsedCache;
+        }
+      } catch (e) {
+        Logger.log('Cache parse error: ' + e.toString());
       }
     }
     
@@ -87,30 +91,43 @@ function getOperators() {
     var props = PropertiesService.getScriptProperties();
     var stored = props.getProperty('operators_json');
     if (stored) {
-      var operators = JSON.parse(stored);
-      // CHECK: If properties are empty, ignore them
-      if (operators && operators.length > 0) {
-        Logger.log('Loaded from properties: ' + operators.length + ' operators');
-        return operators;
+      try {
+        var operators = JSON.parse(stored);
+        if (operators && operators.length > 0) {
+          Logger.log('✓ Loaded from properties: ' + operators.length + ' operators');
+          return operators;
+        }
+      } catch (e) {
+        Logger.log('Properties parse error: ' + e.toString());
       }
     }
     
-    // 4. Force a Fresh Start (Clear bad data automatically)
-    Logger.log('No valid data found. Clearing cache and fetching live...');
-    clearCacheAndProperties(); // Run your cleaner function automatically here!
-    
-    // 5. Fetch live
-    var liveData = fetchAllOperatorsLive();
-    if (liveData.length > 0) {
-      cacheOperators(liveData);
-      saveToProperties(liveData);
-      return liveData;
+    // 4. Use import.gs fallback (GUARANTEED DATA SOURCE)
+    Logger.log('Sheet/cache/properties empty - using import.gs fallback');
+    try {
+      var fallbackData = getOperatorsFromImport();
+      if (fallbackData && fallbackData.length > 0) {
+        Logger.log('✓ Loaded from import.gs fallback: ' + fallbackData.length + ' operators');
+        // Cache the fallback data for faster subsequent loads
+        cacheOperators(fallbackData);
+        saveToProperties(fallbackData);
+        return fallbackData;
+      }
+    } catch (e) {
+      Logger.log('⚠ import.gs fallback error: ' + e.toString());
     }
     
+    // 5. If even fallback fails, return empty with clear error
+    Logger.log('✗ ERROR: All data sources failed (sheet, cache, properties, import.gs)');
     return [];
   } catch (e) {
-    Logger.log('Error in getOperators: ' + e.toString());
-    return [];
+    Logger.log('✗ Critical error in getOperators: ' + e.toString());
+    // Try import.gs one last time as emergency fallback
+    try {
+      return getOperatorsFromImport();
+    } catch (e2) {
+      return [];
+    }
   }
 }
 
@@ -1492,24 +1509,10 @@ function clearCacheAndProperties() {
 }
 
 /**
- * Run this function ONCE to set up the automatic cleaner.
- * It will run clearCacheAndProperties every day at 1 AM.
+ * DEPRECATED: This function was too aggressive - cleared cache daily.
+ * Cache clearing should only happen on explicit manual refresh or monthly update.
+ * Removed to prevent unnecessary slow refetches.
  */
-function setupAutoCleaner() {
-  // First, delete any existing triggers to prevent duplicates
-  var triggers = ScriptApp.getProjectTriggers();
-  for (var i = 0; i < triggers.length; i++) {
-    if (triggers[i].getHandlerFunction() === 'clearCacheAndProperties') {
-      ScriptApp.deleteTrigger(triggers[i]);
-    }
-  }
-  
-  // Create a new daily trigger
-  ScriptApp.newTrigger('clearCacheAndProperties')
-    .timeBased()
-    .everyDays(1)
-    .atHour(1) // Runs at 1 AM
-    .create();
-    
-  Logger.log('Automatic cleaner installed.');
+function setupAutoCleaner_DEPRECATED() {
+  Logger.log('⚠ setupAutoCleaner is DEPRECATED - use manual clearCache() instead');
 }
