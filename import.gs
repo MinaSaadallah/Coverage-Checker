@@ -11,7 +11,8 @@ var OPERATORS_DATA = [{"countryCode": "AD", "operatorId": 2019562, "operatorName
 
 function importAllData() {
   importOperators();
-  SpreadsheetApp.getUi().alert('Done! Imported ' + OPERATORS_DATA.length + ' operators.');
+  // Changed from alert to console.log to avoid errors in triggers
+  console.log('Done! Imported ' + OPERATORS_DATA.length + ' operators.');
 }
 
 function importOperators() {
