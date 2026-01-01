@@ -975,31 +975,32 @@ console.log("%cExtracting raw data from " + window.location.hostname + "...", "c
             var sourceOptions = document.querySelectorAll('.source-option');
 
         
-// 1. Define the Esri Street Map (Light)
-var esriStreet = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
-    attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
-    maxZoom: 19
-});
+// 1. Initialize Leaflet map (wrapped in try-catch for environments where Leaflet isn't loaded)
+try {
+    // Define the Esri Street Map (Light)
+    var esriStreet = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
+        attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',
+        maxZoom: 19
+    });
 
-// 2. Initialize the map with ONLY this layer
-var map = L.map('map', {
-    zoomControl: false, 
-    layers: [esriStreet], // Only the light street map
-    attributionControl: true, // Shows the Esri credits in the bottom right
-    minZoom: 2,
-    worldCopyJump: true,
-    maxBounds: [[-85, -Infinity], [85, Infinity]],
-    maxBoundsViscosity: 1.0
-}).setView([20, 0], 2);
+    // Initialize the map with ONLY this layer
+    map = L.map('map', {
+        zoomControl: false, 
+        layers: [esriStreet], // Only the light street map
+        attributionControl: true, // Shows the Esri credits in the bottom right
+        minZoom: 2,
+        worldCopyJump: true,
+        maxBounds: [[-85, -Infinity], [85, Infinity]],
+        maxBoundsViscosity: 1.0
+    }).setView([20, 0], 2);
 
-// 3. Add the zoom buttons back to the top left
-L.control.zoom({ position: 'topleft' }).addTo(map);
-
-
-// (Optional) Your Search/Location logic goes here
-// elMapLink.addEventListener('input', function () { ... });
-            // Removed Layer Control as requested (Only one map style)
-            // L.control.layers(...) removed
+    // Add the zoom buttons back to the top left
+    L.control.zoom({ position: 'topleft' }).addTo(map);
+    console.log('✓ Leaflet map initialized successfully');
+} catch (e) {
+    console.warn('⚠ Leaflet map initialization failed (library may not be loaded):', e.message);
+    console.log('Continuing without map...');
+}
 
             // Event listeners
             elMapLink.addEventListener('input', function () { clearTimeout(debounceTimer); debounceTimer = setTimeout(detectLocation, 500); });
