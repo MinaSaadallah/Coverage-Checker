@@ -26,3 +26,17 @@ function importOperators() {
     sheet.getRange(i + 2, 1, rows.length, 5).setValues(rows);
   }
 }
+
+/**
+ * Returns the fallback operators data from import.gs.
+ * This is used by Code.gs as a guaranteed fallback when sheet/cache/properties are empty.
+ * @returns {Array} Array of operator objects
+ */
+function getOperatorsFromImport() {
+  if (typeof OPERATORS_DATA !== 'undefined' && OPERATORS_DATA && OPERATORS_DATA.length > 0) {
+    Logger.log('Loaded ' + OPERATORS_DATA.length + ' operators from import.gs fallback');
+    return OPERATORS_DATA;
+  }
+  Logger.log('WARNING: import.gs OPERATORS_DATA is empty');
+  return [];
+}

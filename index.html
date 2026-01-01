@@ -316,6 +316,11 @@
             color: var(--accent-color);
         }
 
+        .status.status-error {
+            color: #ef4444;
+            font-weight: 600;
+        }
+
         .coords {
             color: var(--text-secondary);
             opacity: 0.7;
@@ -968,11 +973,6 @@ console.log("%cExtracting raw data from " + window.location.hostname + "...", "c
             var countrySelectEl = document.getElementById('countrySelect');
             var operatorSelectEl = document.getElementById('operatorSelect');
             var sourceOptions = document.querySelectorAll('.source-option');
-            var elMapLink = document.getElementById('mapLink');
-            var elStatus = document.getElementById('statusText');
-            var elCoords = document.getElementById('coordsText');
-            var countrySelectEl = document.getElementById('countrySelect');
-            var operatorSelectEl = document.getElementById('operatorSelect');
 
         
 // 1. Define the Esri Street Map (Light)
@@ -1247,47 +1247,82 @@ L.control.zoom({ position: 'topleft' }).addTo(map);
                 var isLocal = (typeof google === 'undefined' || !google.script);
 
                 if (isLocal) {
+                    // Local mode - use fetch API
                     fetch('/api/operators')
-                        .then(function (response) { return response.json(); })
+                        .then(function (response) {
+                            if (!response.ok) {
+                                throw new Error('HTTP ' + response.status + ': ' + response.statusText);
+                            }
+                            return response.json();
+                        })
                         .then(function (data) {
                             handleOperatorsData(data);
                         })
                         .catch(function (e) {
-                            setStatus('Error loading local data: ' + e);
+                            setStatus('✗ Error loading data');
+                            elStatus.classList.add('status-error');
+                            console.error('loadOperators (local) error:', e);
+                            // Show user-friendly error
+                            alert('Failed to load operator data. Please check:\n1. Server is running (npm start)\n2. operators.json exists\n3. Check browser console for details');
                         });
                 } else {
+                    // Google Apps Script mode
                     google.script.run
-                        .withSuccessHandler(handleOperatorsData)
-                        .withFailureHandler(function (e) { setStatus('Error: ' + e); })
+                        .withSuccessHandler(function(data) {
+                            handleOperatorsData(data);
+                        })
+                        .withFailureHandler(function (e) {
+                            setStatus('✗ Error loading data');
+                            elStatus.classList.add('status-error');
+                            console.error('loadOperators (GAS) error:', e);
+                            // Show user-friendly error
+                            alert('Failed to load operator data. Please check:\n1. Code.gs is deployed correctly\n2. import.gs file exists\n3. Run testGetOperators() in Apps Script to debug');
+                        })
                         .getOperators();
                 }
             }
 
             function handleOperatorsData(data) {
-                if (!data || !data.length) {
-                    setStatus('No data found');
-                    return;
-                }
-                operatorsData = data;
-
-                // Rebuild map from data
-                countryMap = {};
-                data.forEach(function (op) {
-                    var code = String(op.countryCode || '').toUpperCase().trim();
-                    if (code.length >= 2) {
-                        if (!countryMap[code]) countryMap[code] = [];
-                        countryMap[code].push({
-                            countryCode: code,
-                            operatorName: op.operatorName || '',
-                            operatorId: op.operatorId || '',
-                            link: op.link || '',
-                            gsmaId: op.gsmaId || null
-                        });
+                try {
+                    if (!data || !data.length) {
+                        setStatus('⚠ No data loaded - Check Code.gs');
+                        elStatus.classList.add('status-error');
+                        console.error('handleOperatorsData: Received empty or invalid data', data);
+                        return;
                     }
-                });
+                    operatorsData = data;
 
-                populateCountrySelect();
-                resetStatus();
+                    // Rebuild map from data
+                    countryMap = {};
+                    data.forEach(function (op) {
+                        var code = String(op.countryCode || '').toUpperCase().trim();
+                        if (code.length >= 2) {
+                            if (!countryMap[code]) countryMap[code] = [];
+                            countryMap[code].push({
+                                countryCode: code,
+                                operatorName: op.operatorName || '',
+                                operatorId: op.operatorId || '',
+                                link: op.link || '',
+                                gsmaId: op.gsmaId || null
+                            });
+                        }
+                    });
+
+                    if (Object.keys(countryMap).length === 0) {
+                        setStatus('⚠ No valid country data found');
+                        elStatus.classList.add('status-error');
+                        console.error('handleOperatorsData: No valid countries in data');
+                        return;
+                    }
+
+                    populateCountrySelect();
+                    resetStatus();
+                    console.log('✓ Successfully loaded', data.length, 'operators from', Object.keys(countryMap).length, 'countries');
+                } catch (e) {
+                    setStatus('✗ Error processing data');
+                    elStatus.classList.add('status-error');
+                    console.error('handleOperatorsData error:', e);
+                }
             }
 
             function resetStatus() {
