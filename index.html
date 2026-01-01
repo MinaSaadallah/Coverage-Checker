@@ -974,9 +974,8 @@ console.log("%cExtracting raw data from " + window.location.hostname + "...", "c
             var operatorSelectEl = document.getElementById('operatorSelect');
             var sourceOptions = document.querySelectorAll('.source-option');
 
-        
-// 1. Initialize Leaflet map (wrapped in try-catch for environments where Leaflet isn't loaded)
-try {
+            // 1. Initialize Leaflet map (wrapped in try-catch for environments where Leaflet isn't loaded)
+            try {
     // Define the Esri Street Map (Light)
     var esriStreet = L.tileLayer('https://server.arcgisonline.com/ArcGIS/rest/services/World_Street_Map/MapServer/tile/{z}/{y}/{x}', {
         attribution: 'Tiles &copy; Esri &mdash; Source: Esri, DeLorme, NAVTEQ, USGS, Intermap, iPC, NRCAN, Esri Japan, METI, Esri China (Hong Kong), Esri (Thailand), TomTom, 2012',

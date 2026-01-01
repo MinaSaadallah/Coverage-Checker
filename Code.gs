@@ -1511,28 +1511,8 @@ function clearCacheAndProperties() {
 /**
  * DEPRECATED: This function was too aggressive - cleared cache daily.
  * Cache clearing should only happen on explicit manual refresh or monthly update.
- * 
- * DO NOT USE - Kept for reference only.
- * If you want to clear cache, use the clearCache() function manually.
+ * Removed to prevent unnecessary slow refetches.
  */
 function setupAutoCleaner_DEPRECATED() {
   Logger.log('⚠ setupAutoCleaner is DEPRECATED - use manual clearCache() instead');
-  /*
-  // First, delete any existing triggers to prevent duplicates
-  var triggers = ScriptApp.getProjectTriggers();
-  for (var i = 0; i < triggers.length; i++) {
-    if (triggers[i].getHandlerFunction() === 'clearCacheAndProperties') {
-      ScriptApp.deleteTrigger(triggers[i]);
-    }
-  }
-  
-  // Create a new daily trigger
-  ScriptApp.newTrigger('clearCacheAndProperties')
-    .timeBased()
-    .everyDays(1)
-    .atHour(1) // Runs at 1 AM
-    .create();
-    
-  Logger.log('Automatic cleaner installed.');
-  */
 }
