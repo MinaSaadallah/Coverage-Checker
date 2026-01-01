@@ -11,7 +11,7 @@ var OPERATORS_DATA = [{"countryCode":"AD","operatorId":2019562,"operatorName":"A
 
 function importAllData() {
   importOperators();
-  console.log('Done! Imported ' + OPERATORS_DATA.length + ' operators.');
+  Logger.log('Done! Imported ' + OPERATORS_DATA.length + ' operators.');
 }
 
 function importOperators() {
