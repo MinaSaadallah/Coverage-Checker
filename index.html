@@ -794,14 +794,6 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="label" for="emailInput">Email</label>
-                        <div class="input-wrapper">
-                            <input type="email" id="emailInput" class="input" placeholder="Enter your email address"
-                                autocomplete="email" required>
-                        </div>
-                    </div>
-
-                    <div class="form-group">
                         <label class="label">Country</label>
                         <div id="countrySelect" class="custom-select">
                             <input type="text" class="custom-select-input" placeholder="Loading..." disabled
@@ -1206,33 +1198,7 @@
             }
 
             function handleCoverageCheck(generatedUrl) {
-                var emailInput = document.getElementById('emailInput');
-                var email = emailInput ? emailInput.value.trim() : '';
                 var mapLink = elMapLink ? elMapLink.value.trim() : '';
-                
-                // Validate email
-                if (!email) {
-                    alert('Please enter your email address');
-                    if (emailInput) emailInput.focus();
-                    return;
-                }
-                
-                // Use HTML5 validation if available, otherwise use regex
-                if (emailInput && typeof emailInput.checkValidity === 'function') {
-                    if (!emailInput.checkValidity()) {
-                        alert('Please enter a valid email address');
-                        emailInput.focus();
-                        return;
-                    }
-                } else {
-                    // Fallback to more comprehensive regex pattern
-                    var emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-                    if (!emailRegex.test(email)) {
-                        alert('Please enter a valid email address');
-                        if (emailInput) emailInput.focus();
-                        return;
-                    }
-                }
                 
                 // Save data and open link
                 var isLocal = (typeof google === 'undefined' || !google.script);
@@ -1263,7 +1229,7 @@
                             // Still open the link
                             window.open(generatedUrl, '_blank');
                         })
-                        .saveDataToSheet(email, currentSource, mapLink, generatedUrl);
+                        .saveDataToSheet(currentSource, mapLink, generatedUrl);
                 }
             }
 
