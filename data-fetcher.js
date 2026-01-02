@@ -127,7 +127,7 @@ async function run() {
 
   try {
     fs.writeFileSync('operators.json', JSON.stringify(nperfOperators, null, 2));
-    logger.info(`✅ Successfully saved \${nperfOperators.length} operators to operators.json`);
+    logger.info(`✅ Successfully saved ${nperfOperators.length} operators to operators.json`);
   } catch (error) {
     logger.error('Failed to write operators.json', error);
     process.exit(1);
@@ -156,7 +156,7 @@ async function fetchGSMAData() {
       country: row[2],
     }));
 
-    logger.info(`Loaded \${operators.length} operators from GSMA`);
+    logger.info(`Loaded ${operators.length} operators from GSMA`);
     return operators;
   } catch (error) {
     logger.error('GSMA fetch error', error);
@@ -170,7 +170,7 @@ async function fetchGSMAData() {
  * @returns {Promise<Array>} Array of combined operator objects
  */
 async function fetchNPerfData(gsmaOperators) {
-  logger.info(`Fetching nPerf data for \${ALL_COUNTRIES.length} countries...`);
+  logger.info(`Fetching nPerf data for ${ALL_COUNTRIES.length} countries...`);
   
   const nperfOperators = [];
   const matchedGsmaIds = new Set();
@@ -207,7 +207,7 @@ async function fetchNPerfData(gsmaOperators) {
                 countryCode: code,
                 operatorId: ispId,
                 operatorName: ispName,
-                link: `https://www.nperf.com/en/map/\${code}/-/\${ispId}.\${safeName}/signal`,
+                link: `https://www.nperf.com/en/map/${code}/-/${ispId}.${safeName}/signal`,
                 gsmaId: ''
               };
 
@@ -224,7 +224,7 @@ async function fetchNPerfData(gsmaOperators) {
         }
       }
     } catch (error) {
-      logger.debug(`Failed to fetch nPerf data for \${code}: \${error.message}`);
+      logger.debug(`Failed to fetch nPerf data for ${code}: ${error.message}`);
     }
 
     // Rate limiting delay
@@ -232,15 +232,15 @@ async function fetchNPerfData(gsmaOperators) {
     
     processed++;
     if (processed % 50 === 0) {
-      logger.info(`Processed \${processed}/\${ALL_COUNTRIES.length} countries...`);
+      logger.info(`Processed ${processed}/${ALL_COUNTRIES.length} countries...`);
     }
   }
 
-  logger.info(`Loaded \${nperfOperators.length} operators from nPerf`);
+  logger.info(`Loaded ${nperfOperators.length} operators from nPerf`);
 
   // Add missing GSMA operators
   const missingGsma = gsmaOperators.filter(g => !matchedGsmaIds.has(g.gsmaId.toString()));
-  logger.info(`Found \${missingGsma.length} GSMA operators not in nPerf`);
+  logger.info(`Found ${missingGsma.length} GSMA operators not in nPerf`);
 
   missingGsma.forEach(g => {
     const code = mapCountryNameToCode(g.country);

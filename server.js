@@ -29,7 +29,15 @@ const PORT = config.server.port;
 
 // Middleware
 app.use(express.json());
-app.use(express.static(__dirname, { maxAge: '1h' }));
+
+// Serve static files from root directory
+// NOTE: In production, consider serving only specific files or using a separate public directory
+// For local development and Google Apps Script compatibility, serving from root is acceptable
+app.use(express.static(__dirname, { 
+  maxAge: '1h',
+  dotfiles: 'deny', // Don't serve hidden files
+  index: false // Don't auto-serve index files for directories
+}));
 
 // ===================================
 // GOOGLE APPS SCRIPT SHIM
