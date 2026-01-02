@@ -467,3 +467,156 @@ function runFullDiagnostic() {
   Logger.log(output);
   return output;
 }
+
+/**
+ * Gets or creates the "Data" sheet for storing coverage check logs
+ * @return {Sheet} The Data sheet
+ */
+function getOrCreateDataSheet() {
+  var ss = getSpreadsheet();
+  if (!ss) {
+    throw new Error('Unable to access spreadsheet');
+  }
+  
+  var sheet = ss.getSheetByName('Data');
+  
+  if (!sheet) {
+    // Create new sheet
+    sheet = ss.insertSheet('Data');
+    
+    // Add headers
+    var headers = ['Email', 'Timestamp', 'Source', 'Entered Link', 'Generated Link'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    
+    // Format header row
+    var headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setFontWeight('bold');
+    headerRange.setBackground('#4ade80');
+    
+    // Set column widths
+    sheet.setColumnWidth(1, 200); // Email
+    sheet.setColumnWidth(2, 180); // Timestamp
+    sheet.setColumnWidth(3, 100); // Source
+    sheet.setColumnWidth(4, 300); // Entered Link
+    sheet.setColumnWidth(5, 300); // Generated Link
+    
+    // Freeze header row
+    sheet.setFrozenRows(1);
+    
+    Logger.log('Created new Data sheet with headers');
+  }
+  
+  return sheet;
+}
+
+/**
+ * Saves coverage check data to the Data sheet
+ * @param {string} source - Coverage source (nperf or GSMA)
+ * @param {string} enteredLink - Original map link entered by user
+ * @param {string} generatedLink - Generated coverage check link
+ * @return {Object} Result object with success status
+ */
+function saveDataToSheet(source, enteredLink, generatedLink) {
+  try {
+    // Validate parameters with specific error messages
+    var missingParams = [];
+    if (!source) missingParams.push('source');
+    if (!enteredLink) missingParams.push('enteredLink');
+    if (!generatedLink) missingParams.push('generatedLink');
+    
+    if (missingParams.length > 0) {
+      return { 
+        success: false, 
+        error: 'Missing required parameters: ' + missingParams.join(', ') 
+      };
+    }
+    
+    var sheet = getOrCreateDataSheet();
+    
+    // Get user email automatically
+    var userEmail = Session.getActiveUser().getEmail() || 'Anonymous';
+    
+    // Create data row
+    var timestamp = new Date();
+    var rowData = [userEmail, timestamp, source, enteredLink, generatedLink];
+    
+    // Append to sheet
+    sheet.appendRow(rowData);
+    
+    Logger.log('Saved data: ' + userEmail + ', ' + source + ', ' + enteredLink);
+    return { success: true, message: 'Data saved successfully' };
+    
+  } catch (e) {
+    Logger.log('Error saving data: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Get all coverage check data (optional - for viewing/reporting)
+ * @return {Array} Array of coverage check objects
+ */
+function getAllCoverageData() {
+  try {
+    var ss = getSpreadsheet();
+    if (!ss) return [];
+    
+    var sheet = ss.getSheetByName('Data');
+    if (!sheet) return [];
+    
+    var data = sheet.getDataRange().getValues();
+    // Remove header row
+    data.shift();
+    
+    return data.map(function(row) {
+      return {
+        userEmail: row[0],
+        timestamp: row[1],
+        source: row[2],
+        enteredLink: row[3],
+        generatedLink: row[4]
+      };
+    });
+  } catch (e) {
+    Logger.log('Error getting data: ' + e.message);
+    return [];
+  }
+}
+
+/**
+ * Clear old data from the Data sheet (optional)
+ * @param {number} daysOld - Number of days old to clear (default: 30)
+ * @return {Object} Result object with success status
+ */
+function clearOldData(daysOld) {
+  try {
+    daysOld = daysOld || 30;
+    
+    var ss = getSpreadsheet();
+    if (!ss) {
+      return { success: false, error: 'Unable to access spreadsheet' };
+    }
+    
+    var sheet = ss.getSheetByName('Data');
+    if (!sheet) {
+      return { success: false, error: 'Data sheet not found' };
+    }
+    
+    var data = sheet.getDataRange().getValues();
+    var cutoffDate = new Date();
+    cutoffDate.setDate(cutoffDate.getDate() - daysOld);
+    
+    // Start from bottom to avoid index shifting
+    for (var i = data.length - 1; i > 0; i--) {
+      var rowDate = new Date(data[i][1]); // Timestamp is in column 2 (index 1)
+      if (rowDate < cutoffDate) {
+        sheet.deleteRow(i + 1);
+      }
+    }
+    
+    return { success: true, message: 'Old data cleared' };
+  } catch (e) {
+    Logger.log('Error clearing data: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}

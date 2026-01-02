@@ -1186,20 +1186,50 @@
                     return;
                 }
 
-                if (currentSource === 'nperf') {
-                    var btnMap = document.createElement('a');
-                    btnMap.className = 'btn btn-primary';
-                    btnMap.href = nperfUrl;
-                    btnMap.target = '_blank';
-                    btnMap.innerHTML = 'Check Coverage';
-                    container.appendChild(btnMap);
+                var targetUrl = currentSource === 'nperf' ? nperfUrl : gsmaUrl;
+                
+                var btnCheck = document.createElement('button');
+                btnCheck.className = 'btn btn-primary';
+                btnCheck.innerHTML = 'Check Coverage';
+                btnCheck.onclick = function() {
+                    handleCoverageCheck(targetUrl);
+                };
+                container.appendChild(btnCheck);
+            }
+
+            function handleCoverageCheck(generatedUrl) {
+                var mapLink = elMapLink ? elMapLink.value.trim() : '';
+                
+                // Save data and open link
+                var isLocal = (typeof google === 'undefined' || !google.script);
+                
+                if (isLocal) {
+                    // Local mode - just open the link (no saving in local mode)
+                    window.open(generatedUrl, '_blank');
                 } else {
-                    var btnInfo = document.createElement('a');
-                    btnInfo.className = 'btn btn-primary';
-                    btnInfo.href = gsmaUrl;
-                    btnInfo.target = '_blank';
-                    btnInfo.innerHTML = 'Check Coverage';
-                    container.appendChild(btnInfo);
+                    // Google Apps Script mode - save to sheet
+                    setStatus('Saving data...');
+                    google.script.run
+                        .withSuccessHandler(function(result) {
+                            if (result.success) {
+                                setStatus('✓ Data saved');
+                                window.open(generatedUrl, '_blank');
+                                // Reset status after a delay
+                                setTimeout(function() {
+                                    setStatus('Ready');
+                                }, 2000);
+                            } else {
+                                setStatus('✗ Save failed');
+                                alert('Failed to save data: ' + (result.error || 'Unknown error'));
+                            }
+                        })
+                        .withFailureHandler(function(e) {
+                            setStatus('✗ Save failed');
+                            alert('Error saving data: ' + e.message);
+                            // Still open the link
+                            window.open(generatedUrl, '_blank');
+                        })
+                        .saveDataToSheet(currentSource, mapLink, generatedUrl);
                 }
             }
 
