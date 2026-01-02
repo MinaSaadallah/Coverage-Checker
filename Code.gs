@@ -519,8 +519,18 @@ function getOrCreateDataSheet() {
  */
 function saveDataToSheet(email, source, enteredLink, generatedLink) {
   try {
-    if (!email || !source || !enteredLink || !generatedLink) {
-      return { success: false, error: 'Missing required parameters' };
+    // Validate parameters with specific error messages
+    var missingParams = [];
+    if (!email) missingParams.push('email');
+    if (!source) missingParams.push('source');
+    if (!enteredLink) missingParams.push('enteredLink');
+    if (!generatedLink) missingParams.push('generatedLink');
+    
+    if (missingParams.length > 0) {
+      return { 
+        success: false, 
+        error: 'Missing required parameters: ' + missingParams.join(', ') 
+      };
     }
     
     var sheet = getOrCreateDataSheet();

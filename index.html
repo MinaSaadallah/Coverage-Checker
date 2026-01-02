@@ -794,10 +794,10 @@
                     </div>
 
                     <div class="form-group">
-                        <label class="label">Email</label>
+                        <label class="label" for="emailInput">Email</label>
                         <div class="input-wrapper">
                             <input type="email" id="emailInput" class="input" placeholder="Enter your email address"
-                                autocomplete="email">
+                                autocomplete="email" required>
                         </div>
                     </div>
 
@@ -1217,12 +1217,21 @@
                     return;
                 }
                 
-                // Simple email validation
-                var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-                if (!emailRegex.test(email)) {
-                    alert('Please enter a valid email address');
-                    if (emailInput) emailInput.focus();
-                    return;
+                // Use HTML5 validation if available, otherwise use regex
+                if (emailInput && typeof emailInput.checkValidity === 'function') {
+                    if (!emailInput.checkValidity()) {
+                        alert('Please enter a valid email address');
+                        emailInput.focus();
+                        return;
+                    }
+                } else {
+                    // Fallback to more comprehensive regex pattern
+                    var emailRegex = /^[a-zA-Z0-9.!#$%&'*+\/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+                    if (!emailRegex.test(email)) {
+                        alert('Please enter a valid email address');
+                        if (emailInput) emailInput.focus();
+                        return;
+                    }
                 }
                 
                 // Save data and open link
