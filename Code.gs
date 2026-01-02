@@ -536,6 +536,12 @@ function saveDataToSheet(source, enteredLink, generatedLink) {
     // Get user email automatically
     var userEmail = Session.getActiveUser().getEmail() || 'Anonymous';
     
+    // Check for duplicates - prevent saving if entry exists within last 5 seconds
+    if (isDuplicateEntry(sheet, userEmail, source, enteredLink, generatedLink)) {
+      Logger.log('Duplicate entry prevented: ' + userEmail + ', ' + source + ', ' + enteredLink);
+      return { success: true, message: 'Data already saved (duplicate prevented)' };
+    }
+    
     // Create data row
     var timestamp = new Date();
     var rowData = [userEmail, timestamp, source, enteredLink, generatedLink];
@@ -549,6 +555,49 @@ function saveDataToSheet(source, enteredLink, generatedLink) {
   } catch (e) {
     Logger.log('Error saving data: ' + e.message);
     return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Checks if an entry already exists to prevent duplicates
+ * @param {Sheet} sheet - The data sheet
+ * @param {string} userEmail - User email
+ * @param {string} source - Coverage source
+ * @param {string} enteredLink - Entered link
+ * @param {string} generatedLink - Generated link
+ * @return {boolean} True if duplicate exists
+ */
+function isDuplicateEntry(sheet, userEmail, source, enteredLink, generatedLink) {
+  try {
+    var data = sheet.getDataRange().getValues();
+    
+    // Skip header row, check only recent entries (last 10 rows for performance)
+    var startRow = Math.max(1, data.length - 10);
+    var now = new Date().getTime();
+    var fiveSecondsAgo = now - 5000; // 5 seconds in milliseconds
+    
+    for (var i = data.length - 1; i >= startRow; i--) {
+      var row = data[i];
+      var rowEmail = row[0];
+      var rowTimestamp = new Date(row[1]).getTime();
+      var rowSource = row[2];
+      var rowEnteredLink = row[3];
+      var rowGeneratedLink = row[4];
+      
+      // Check if this entry matches and is within the last 5 seconds
+      if (rowEmail === userEmail &&
+          rowSource === source &&
+          rowEnteredLink === enteredLink &&
+          rowGeneratedLink === generatedLink &&
+          rowTimestamp >= fiveSecondsAgo) {
+        return true;
+      }
+    }
+    
+    return false;
+  } catch (e) {
+    Logger.log('Error checking duplicates: ' + e.message);
+    return false; // If check fails, allow saving to prevent data loss
   }
 }
 
