@@ -1207,27 +1207,23 @@
                     // Local mode - just open the link (no saving in local mode)
                     window.open(generatedUrl, '_blank');
                 } else {
-                    // Google Apps Script mode - save to sheet
-                    setStatus('Saving data...');
+                    // Google Apps Script mode - save to sheet silently in background
+                    // Fire-and-forget: open link immediately without waiting
+                    window.open(generatedUrl, '_blank');
+                    
+                    // Save data asynchronously (no UI feedback)
                     google.script.run
                         .withSuccessHandler(function(result) {
+                            // Silent success - log only to console
                             if (result.success) {
-                                setStatus('✓ Data saved');
-                                window.open(generatedUrl, '_blank');
-                                // Reset status after a delay
-                                setTimeout(function() {
-                                    setStatus('Ready');
-                                }, 2000);
+                                console.log('Data saved successfully');
                             } else {
-                                setStatus('✗ Save failed');
-                                alert('Failed to save data: ' + (result.error || 'Unknown error'));
+                                console.log('Save failed: ' + (result.error || 'Unknown error'));
                             }
                         })
                         .withFailureHandler(function(e) {
-                            setStatus('✗ Save failed');
-                            alert('Error saving data: ' + e.message);
-                            // Still open the link
-                            window.open(generatedUrl, '_blank');
+                            // Silent failure - log only to console
+                            console.log('Error saving data: ' + e.message);
                         })
                         .saveDataToSheet(currentSource, mapLink, generatedUrl);
                 }

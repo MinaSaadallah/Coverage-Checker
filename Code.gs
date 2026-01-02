@@ -536,6 +536,12 @@ function saveDataToSheet(source, enteredLink, generatedLink) {
     // Get user email automatically
     var userEmail = Session.getActiveUser().getEmail() || 'Anonymous';
     
+    // Check for duplicates - prevent saving if entry exists within last 5 seconds
+    if (isDuplicateEntry(sheet, userEmail, source, enteredLink, generatedLink)) {
+      Logger.log('Duplicate entry prevented: ' + userEmail + ', ' + source + ', ' + enteredLink);
+      return { success: true, message: 'Data already saved (duplicate prevented)' };
+    }
+    
     // Create data row
     var timestamp = new Date();
     var rowData = [userEmail, timestamp, source, enteredLink, generatedLink];
@@ -549,6 +555,80 @@ function saveDataToSheet(source, enteredLink, generatedLink) {
   } catch (e) {
     Logger.log('Error saving data: ' + e.message);
     return { success: false, error: e.message };
+  }
+}
+
+/**
+ * Checks if an entry already exists to prevent duplicates
+ * @param {Sheet} sheet - The data sheet
+ * @param {string} userEmail - User email
+ * @param {string} source - Coverage source
+ * @param {string} enteredLink - Entered link
+ * @param {string} generatedLink - Generated link
+ * @return {boolean} True if duplicate exists
+ */
+function isDuplicateEntry(sheet, userEmail, source, enteredLink, generatedLink) {
+  try {
+    // Configuration constants
+    var MAX_ROWS_TO_CHECK = 10; // Number of recent rows to check for duplicates
+    var DUPLICATE_WINDOW_MS = 5000; // Time window in milliseconds (5 seconds)
+    var MIN_ROWS_FOR_CHECK = 2; // Minimum rows needed (header + at least 1 data row)
+    var NUM_COLUMNS = 5; // Number of columns to fetch (Email, Timestamp, Source, EnteredLink, GeneratedLink)
+    var HEADER_ROWS = 1; // Number of header rows to exclude
+    
+    var lastRow = sheet.getLastRow();
+    
+    // Need at least MIN_ROWS_FOR_CHECK rows to check for duplicates
+    if (lastRow < MIN_ROWS_FOR_CHECK) {
+      return false;
+    }
+    
+    // Fetch only the last N rows for performance (or fewer if sheet has less data)
+    var numRowsToCheck = Math.min(MAX_ROWS_TO_CHECK, lastRow - HEADER_ROWS);
+    var startRow = lastRow - numRowsToCheck + 1;
+    var data = sheet.getRange(startRow, 1, numRowsToCheck, NUM_COLUMNS).getValues();
+    
+    var now = new Date().getTime();
+    var windowStart = now - DUPLICATE_WINDOW_MS;
+    
+    // Iterate through fetched rows (most recent first)
+    for (var i = data.length - 1; i >= 0; i--) {
+      var row = data[i];
+      var rowEmail = row[0];
+      var rowSource = row[2];
+      var rowEnteredLink = row[3];
+      var rowGeneratedLink = row[4];
+      
+      // Safely parse timestamp
+      var rowTimestamp;
+      try {
+        rowTimestamp = new Date(row[1]).getTime();
+        if (isNaN(rowTimestamp)) {
+          continue; // Skip invalid timestamps
+        }
+      } catch (e) {
+        continue; // Skip invalid timestamps
+      }
+      
+      // Early exit optimization: if timestamp is outside window, no need to check further
+      // since we're iterating from newest to oldest
+      if (rowTimestamp < windowStart) {
+        break;
+      }
+      
+      // Check if this entry matches and is within the time window
+      if (rowEmail === userEmail &&
+          rowSource === source &&
+          rowEnteredLink === enteredLink &&
+          rowGeneratedLink === generatedLink) {
+        return true;
+      }
+    }
+    
+    return false;
+  } catch (e) {
+    Logger.log('Error checking duplicates: ' + e.message);
+    return false; // If check fails, allow saving to prevent data loss
   }
 }
 
