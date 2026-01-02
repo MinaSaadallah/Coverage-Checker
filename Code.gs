@@ -569,6 +569,9 @@ function saveDataToSheet(source, enteredLink, generatedLink) {
  */
 function isDuplicateEntry(sheet, userEmail, source, enteredLink, generatedLink) {
   try {
+    var MAX_ROWS_TO_CHECK = 10; // Number of recent rows to check for duplicates
+    var DUPLICATE_WINDOW_MS = 5000; // Time window in milliseconds (5 seconds)
+    
     var lastRow = sheet.getLastRow();
     
     // Need at least 2 rows (header + 1 data row) to check for duplicates
@@ -576,13 +579,13 @@ function isDuplicateEntry(sheet, userEmail, source, enteredLink, generatedLink) 
       return false;
     }
     
-    // Fetch only the last 10 rows for performance (or fewer if sheet has less data)
-    var numRowsToCheck = Math.min(10, lastRow - 1); // Exclude header row
+    // Fetch only the last N rows for performance (or fewer if sheet has less data)
+    var numRowsToCheck = Math.min(MAX_ROWS_TO_CHECK, lastRow - 1); // Exclude header row
     var startRow = lastRow - numRowsToCheck + 1;
     var data = sheet.getRange(startRow, 1, numRowsToCheck, 5).getValues();
     
     var now = new Date().getTime();
-    var fiveSecondsAgo = now - 5000; // 5 seconds in milliseconds
+    var windowStart = now - DUPLICATE_WINDOW_MS;
     
     // Iterate through fetched rows (most recent first)
     for (var i = data.length - 1; i >= 0; i--) {
@@ -603,12 +606,17 @@ function isDuplicateEntry(sheet, userEmail, source, enteredLink, generatedLink) 
         continue; // Skip invalid timestamps
       }
       
-      // Check if this entry matches and is within the last 5 seconds
+      // Early exit optimization: if timestamp is outside window, no need to check further
+      // since we're iterating from newest to oldest
+      if (rowTimestamp < windowStart) {
+        break;
+      }
+      
+      // Check if this entry matches and is within the time window
       if (rowEmail === userEmail &&
           rowSource === source &&
           rowEnteredLink === enteredLink &&
-          rowGeneratedLink === generatedLink &&
-          rowTimestamp >= fiveSecondsAgo) {
+          rowGeneratedLink === generatedLink) {
         return true;
       }
     }
