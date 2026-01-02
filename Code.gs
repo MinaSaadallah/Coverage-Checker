@@ -569,20 +569,39 @@ function saveDataToSheet(source, enteredLink, generatedLink) {
  */
 function isDuplicateEntry(sheet, userEmail, source, enteredLink, generatedLink) {
   try {
-    var data = sheet.getDataRange().getValues();
+    var lastRow = sheet.getLastRow();
     
-    // Skip header row, check only recent entries (last 10 rows for performance)
-    var startRow = Math.max(1, data.length - 10);
+    // Need at least 2 rows (header + 1 data row) to check for duplicates
+    if (lastRow < 2) {
+      return false;
+    }
+    
+    // Fetch only the last 10 rows for performance (or fewer if sheet has less data)
+    var numRowsToCheck = Math.min(10, lastRow - 1); // Exclude header row
+    var startRow = lastRow - numRowsToCheck + 1;
+    var data = sheet.getRange(startRow, 1, numRowsToCheck, 5).getValues();
+    
     var now = new Date().getTime();
     var fiveSecondsAgo = now - 5000; // 5 seconds in milliseconds
     
-    for (var i = data.length - 1; i >= startRow; i--) {
+    // Iterate through fetched rows (most recent first)
+    for (var i = data.length - 1; i >= 0; i--) {
       var row = data[i];
       var rowEmail = row[0];
-      var rowTimestamp = new Date(row[1]).getTime();
       var rowSource = row[2];
       var rowEnteredLink = row[3];
       var rowGeneratedLink = row[4];
+      
+      // Safely parse timestamp
+      var rowTimestamp;
+      try {
+        rowTimestamp = new Date(row[1]).getTime();
+        if (isNaN(rowTimestamp)) {
+          continue; // Skip invalid timestamps
+        }
+      } catch (e) {
+        continue; // Skip invalid timestamps
+      }
       
       // Check if this entry matches and is within the last 5 seconds
       if (rowEmail === userEmail &&
