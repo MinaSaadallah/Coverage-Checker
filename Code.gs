@@ -569,20 +569,24 @@ function saveDataToSheet(source, enteredLink, generatedLink) {
  */
 function isDuplicateEntry(sheet, userEmail, source, enteredLink, generatedLink) {
   try {
+    // Configuration constants
     var MAX_ROWS_TO_CHECK = 10; // Number of recent rows to check for duplicates
     var DUPLICATE_WINDOW_MS = 5000; // Time window in milliseconds (5 seconds)
+    var MIN_ROWS_FOR_CHECK = 2; // Minimum rows needed (header + at least 1 data row)
+    var NUM_COLUMNS = 5; // Number of columns to fetch (Email, Timestamp, Source, EnteredLink, GeneratedLink)
+    var HEADER_ROWS = 1; // Number of header rows to exclude
     
     var lastRow = sheet.getLastRow();
     
-    // Need at least 2 rows (header + 1 data row) to check for duplicates
-    if (lastRow < 2) {
+    // Need at least MIN_ROWS_FOR_CHECK rows to check for duplicates
+    if (lastRow < MIN_ROWS_FOR_CHECK) {
       return false;
     }
     
     // Fetch only the last N rows for performance (or fewer if sheet has less data)
-    var numRowsToCheck = Math.min(MAX_ROWS_TO_CHECK, lastRow - 1); // Exclude header row
+    var numRowsToCheck = Math.min(MAX_ROWS_TO_CHECK, lastRow - HEADER_ROWS);
     var startRow = lastRow - numRowsToCheck + 1;
-    var data = sheet.getRange(startRow, 1, numRowsToCheck, 5).getValues();
+    var data = sheet.getRange(startRow, 1, numRowsToCheck, NUM_COLUMNS).getValues();
     
     var now = new Date().getTime();
     var windowStart = now - DUPLICATE_WINDOW_MS;
