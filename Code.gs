@@ -467,3 +467,76 @@ function runFullDiagnostic() {
   Logger.log(output);
   return output;
 }
+
+/**
+ * Gets or creates the "Data" sheet for storing coverage check logs
+ * @return {Sheet} The Data sheet
+ */
+function getOrCreateDataSheet() {
+  var ss = getSpreadsheet();
+  if (!ss) {
+    throw new Error('Unable to access spreadsheet');
+  }
+  
+  var sheet = ss.getSheetByName('Data');
+  
+  if (!sheet) {
+    // Create new sheet
+    sheet = ss.insertSheet('Data');
+    
+    // Add headers
+    var headers = ['Email', 'Timestamp', 'Source', 'Entered Link', 'Generated Link'];
+    sheet.getRange(1, 1, 1, headers.length).setValues([headers]);
+    
+    // Format header row
+    var headerRange = sheet.getRange(1, 1, 1, headers.length);
+    headerRange.setFontWeight('bold');
+    headerRange.setBackground('#f3f3f3');
+    
+    // Set column widths
+    sheet.setColumnWidth(1, 200); // Email
+    sheet.setColumnWidth(2, 180); // Timestamp
+    sheet.setColumnWidth(3, 100); // Source
+    sheet.setColumnWidth(4, 300); // Entered Link
+    sheet.setColumnWidth(5, 300); // Generated Link
+    
+    // Freeze header row
+    sheet.setFrozenRows(1);
+    
+    Logger.log('Created new Data sheet with headers');
+  }
+  
+  return sheet;
+}
+
+/**
+ * Saves coverage check data to the Data sheet
+ * @param {string} email - User's email address
+ * @param {string} source - Coverage source (nperf or GSMA)
+ * @param {string} enteredLink - Original map link entered by user
+ * @param {string} generatedLink - Generated coverage check link
+ * @return {Object} Result object with success status
+ */
+function saveDataToSheet(email, source, enteredLink, generatedLink) {
+  try {
+    if (!email || !source || !enteredLink || !generatedLink) {
+      return { success: false, error: 'Missing required parameters' };
+    }
+    
+    var sheet = getOrCreateDataSheet();
+    
+    // Create data row
+    var timestamp = new Date();
+    var rowData = [email, timestamp, source, enteredLink, generatedLink];
+    
+    // Append to sheet
+    sheet.appendRow(rowData);
+    
+    Logger.log('Saved data: ' + email + ', ' + source + ', ' + enteredLink);
+    return { success: true, message: 'Data saved successfully' };
+    
+  } catch (e) {
+    Logger.log('Error saving data: ' + e.message);
+    return { success: false, error: e.message };
+  }
+}

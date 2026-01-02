@@ -794,6 +794,14 @@
                     </div>
 
                     <div class="form-group">
+                        <label class="label">Email</label>
+                        <div class="input-wrapper">
+                            <input type="email" id="emailInput" class="input" placeholder="Enter your email address"
+                                autocomplete="email">
+                        </div>
+                    </div>
+
+                    <div class="form-group">
                         <label class="label">Country</label>
                         <div id="countrySelect" class="custom-select">
                             <input type="text" class="custom-select-input" placeholder="Loading..." disabled
@@ -1186,20 +1194,67 @@
                     return;
                 }
 
-                if (currentSource === 'nperf') {
-                    var btnMap = document.createElement('a');
-                    btnMap.className = 'btn btn-primary';
-                    btnMap.href = nperfUrl;
-                    btnMap.target = '_blank';
-                    btnMap.innerHTML = 'Check Coverage';
-                    container.appendChild(btnMap);
+                var targetUrl = currentSource === 'nperf' ? nperfUrl : gsmaUrl;
+                
+                var btnCheck = document.createElement('button');
+                btnCheck.className = 'btn btn-primary';
+                btnCheck.innerHTML = 'Check Coverage';
+                btnCheck.onclick = function() {
+                    handleCoverageCheck(targetUrl);
+                };
+                container.appendChild(btnCheck);
+            }
+
+            function handleCoverageCheck(generatedUrl) {
+                var emailInput = document.getElementById('emailInput');
+                var email = emailInput ? emailInput.value.trim() : '';
+                var mapLink = elMapLink ? elMapLink.value.trim() : '';
+                
+                // Validate email
+                if (!email) {
+                    alert('Please enter your email address');
+                    if (emailInput) emailInput.focus();
+                    return;
+                }
+                
+                // Simple email validation
+                var emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                if (!emailRegex.test(email)) {
+                    alert('Please enter a valid email address');
+                    if (emailInput) emailInput.focus();
+                    return;
+                }
+                
+                // Save data and open link
+                var isLocal = (typeof google === 'undefined' || !google.script);
+                
+                if (isLocal) {
+                    // Local mode - just open the link (no saving in local mode)
+                    window.open(generatedUrl, '_blank');
                 } else {
-                    var btnInfo = document.createElement('a');
-                    btnInfo.className = 'btn btn-primary';
-                    btnInfo.href = gsmaUrl;
-                    btnInfo.target = '_blank';
-                    btnInfo.innerHTML = 'Check Coverage';
-                    container.appendChild(btnInfo);
+                    // Google Apps Script mode - save to sheet
+                    setStatus('Saving data...');
+                    google.script.run
+                        .withSuccessHandler(function(result) {
+                            if (result.success) {
+                                setStatus('✓ Data saved');
+                                window.open(generatedUrl, '_blank');
+                                // Reset status after a delay
+                                setTimeout(function() {
+                                    setStatus('Ready');
+                                }, 2000);
+                            } else {
+                                setStatus('✗ Save failed');
+                                alert('Failed to save data: ' + (result.error || 'Unknown error'));
+                            }
+                        })
+                        .withFailureHandler(function(e) {
+                            setStatus('✗ Save failed');
+                            alert('Error saving data: ' + e.message);
+                            // Still open the link
+                            window.open(generatedUrl, '_blank');
+                        })
+                        .saveDataToSheet(email, currentSource, mapLink, generatedUrl);
                 }
             }
 
