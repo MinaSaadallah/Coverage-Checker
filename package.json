@@ -6,7 +6,9 @@
   "scripts": {
     "start": "node server.js",
     "refresh": "node data-fetcher.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "sync-countries": "node utils/country-sync.js --sync",
+    "validate-countries": "node utils/country-sync.js"
   },
   "keywords": [
     "mobile",
