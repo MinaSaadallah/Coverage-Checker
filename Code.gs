@@ -1,40 +1,20 @@
 /**
  * Google Apps Script Backend for Coverage Checker
+ * Version 2.0.0 - Autonomous System
+ * 
+ * This file provides the core backend functionality for the Coverage Checker.
+ * Configuration is centralized in Config.gs and CountryNames.gs
+ * 
+ * @file Code.gs
+ * @version 2.0.0
  */
 
-var SPREADSHEET_ID = '1byFsl37OEaHYjYEV2ObVWDoHC_VrBB0RSS9tet1s59E';
-var CACHE_DURATION_SECONDS = 21600;
-var MAX_CACHE_CHUNK_SIZE = 90000;
+// Use centralized configuration (Config.gs is required)
+var SPREADSHEET_ID = typeof CONFIG !== 'undefined' ? CONFIG.SPREADSHEET_ID : '1byFsl37OEaHYjYEV2ObVWDoHC_VrBB0RSS9tet1s59E';
+var CACHE_DURATION_SECONDS = typeof CONFIG !== 'undefined' ? CONFIG.CACHE_DURATION_SECONDS : 21600;
+var MAX_CACHE_CHUNK_SIZE = typeof CONFIG !== 'undefined' ? CONFIG.MAX_CACHE_CHUNK_SIZE : 90000;
 
-var COUNTRY_CODE_TO_NAME = {
-  AD:'Andorra',AE:'UAE',AF:'Afghanistan',AL:'Albania',AM:'Armenia',
-  AO:'Angola',AR:'Argentina',AT:'Austria',AU:'Australia',AW:'Aruba',
-  AZ:'Azerbaijan',BA:'Bosnia',BD:'Bangladesh',BE:'Belgium',BF:'Burkina Faso',
-  BG:'Bulgaria',BH:'Bahrain',BI:'Burundi',BJ:'Benin',BO:'Bolivia',
-  BR:'Brazil',BT:'Bhutan',BW:'Botswana',BY:'Belarus',BZ:'Belize',
-  CA:'Canada',CD:'Congo',CH:'Switzerland',CI:'Ivory Coast',CL:'Chile',
-  CM:'Cameroon',CN:'China',CO:'Colombia',CR:'Costa Rica',CY:'Cyprus',
-  CZ:'Czechia',DE:'Germany',DK:'Denmark',DO:'Dominican',DZ:'Algeria',
-  EC:'Ecuador',EE:'Estonia',EG:'Egypt',ES:'Spain',ET:'Ethiopia',
-  FI:'Finland',FJ:'Fiji',FR:'France',GA:'Gabon',GB:'UK',GE:'Georgia',
-  GH:'Ghana',GR:'Greece',GT:'Guatemala',HK:'Hong Kong',HN:'Honduras',
-  HR:'Croatia',HU:'Hungary',ID:'Indonesia',IE:'Ireland',IL:'Israel',
-  IN:'India',IQ:'Iraq',IS:'Iceland',IT:'Italy',JM:'Jamaica',JO:'Jordan',
-  JP:'Japan',KE:'Kenya',KH:'Cambodia',KR:'Korea',KW:'Kuwait',
-  KZ:'Kazakhstan',LA:'Lao',LB:'Lebanon',LK:'Sri Lanka',LT:'Lithuania',
-  LU:'Luxembourg',LV:'Latvia',LY:'Libya',MA:'Morocco',MD:'Moldova',
-  ME:'Montenegro',MG:'Madagascar',MK:'Macedonia',ML:'Mali',MM:'Myanmar',
-  MN:'Mongolia',MO:'Macao',MX:'Mexico',MY:'Malaysia',MZ:'Mozambique',
-  NA:'Namibia',NG:'Nigeria',NI:'Nicaragua',NL:'Netherlands',NO:'Norway',
-  NP:'Nepal',NZ:'New Zealand',OM:'Oman',PA:'Panama',PE:'Peru',
-  PH:'Philippines',PK:'Pakistan',PL:'Poland',PT:'Portugal',PY:'Paraguay',
-  QA:'Qatar',RO:'Romania',RS:'Serbia',RU:'Russia',RW:'Rwanda',
-  SA:'Saudi Arabia',SE:'Sweden',SG:'Singapore',SI:'Slovenia',SK:'Slovakia',
-  SN:'Senegal',TH:'Thailand',TN:'Tunisia',TR:'Turkey',TW:'Taiwan',
-  TZ:'Tanzania',UA:'Ukraine',UG:'Uganda',US:'USA',UY:'Uruguay',
-  UZ:'Uzbekistan',VE:'Venezuela',VN:'Vietnam',ZA:'South Africa',
-  ZM:'Zambia',ZW:'Zimbabwe'
-};
+// Use full country names from CountryNames.gs (backward compatibility maintained)
 
 function doGet(e) {
   return HtmlService.createHtmlOutputFromFile('index')
@@ -699,4 +679,18 @@ function clearOldData(daysOld) {
     Logger.log('Error clearing data: ' + e.message);
     return { success: false, error: e.message };
   }
+}
+
+/**
+ * Gets country code to name mapping
+ * Uses CountryNames.gs if available, otherwise returns empty object
+ * This ensures backward compatibility and provides access to the mapping
+ * 
+ * @returns {Object} Country code to name mapping
+ */
+function getCountryCodeMapping() {
+  if (typeof COUNTRY_CODE_TO_NAME !== 'undefined') {
+    return COUNTRY_CODE_TO_NAME;
+  }
+  return {};
 }
