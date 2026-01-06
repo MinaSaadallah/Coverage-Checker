@@ -192,8 +192,11 @@ function cacheRemove(key) {
     cache.remove(key + '_chunks');
     
     // Get max chunks from config
-    var config = typeof CONFIG !== 'undefined' ? CONFIG : { MAX_CACHE_CHUNKS_TO_CLEAR: 20 };
-    var maxChunks = config.MAX_CACHE_CHUNKS_TO_CLEAR || 20;
+    var config = typeof CONFIG !== 'undefined' ? CONFIG : { 
+      MAX_CACHE_CHUNKS_TO_CLEAR: 20,
+      DEFAULT_MAX_CHUNKS: 20
+    };
+    var maxChunks = config.MAX_CACHE_CHUNKS_TO_CLEAR || config.DEFAULT_MAX_CHUNKS;
     
     // Remove up to maxChunks possible chunks
     for (var i = 0; i < maxChunks; i++) {

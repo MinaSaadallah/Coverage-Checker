@@ -503,17 +503,20 @@ function checkExternalAPIs() {
     
     var config = getAPIConfig();
     var issues = [];
+    var apiTimeout = (typeof CONFIG !== 'undefined' && CONFIG.API_HEALTH_CHECK_TIMEOUT) 
+      ? CONFIG.API_HEALTH_CHECK_TIMEOUT 
+      : 2000;
     
-    // Quick HEAD request to check if APIs are up (timeout after 2 seconds)
+    // Quick HEAD request to check if APIs are up (with configurable timeout)
     try {
-      UrlFetchApp.fetch(config.gsmaUrl, { method: 'head', muteHttpExceptions: true, timeout: 2000 });
+      UrlFetchApp.fetch(config.gsmaUrl, { method: 'head', muteHttpExceptions: true, timeout: apiTimeout });
       apis.gsma = true;
     } catch (e) {
       issues.push('GSMA API unreachable');
     }
     
     try {
-      UrlFetchApp.fetch(config.countriesUrl, { method: 'head', muteHttpExceptions: true, timeout: 2000 });
+      UrlFetchApp.fetch(config.countriesUrl, { method: 'head', muteHttpExceptions: true, timeout: apiTimeout });
       apis.countries = true;
     } catch (e) {
       issues.push('Countries API unreachable');

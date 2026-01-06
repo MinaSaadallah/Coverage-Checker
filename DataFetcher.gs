@@ -59,8 +59,9 @@ function fetchAllData() {
     // Step 3: Fetch nPerf data (this may take time, check execution limit)
     var elapsedTime = new Date().getTime() - startTime;
     var config = typeof CONFIG !== 'undefined' ? CONFIG : { MAX_EXECUTION_TIME: 330000 };
+    var maxExecutionTime = config.MAX_EXECUTION_TIME;
     
-    if (elapsedTime < (config.MAX_EXECUTION_TIME - 60000)) { // Leave 1 minute buffer
+    if (elapsedTime < (maxExecutionTime - 60000)) { // Leave 1 minute buffer
       try {
         var nperfResult = fetchNPerfDataBatched(gsmaOperators, 0);
         result.nperfCount = nperfResult.count;

@@ -24,7 +24,14 @@ var CONFIG = {
    * Example: https://docs.google.com/spreadsheets/d/YOUR_ID_HERE/edit
    * @type {string}
    */
-  SPREADSHEET_ID: '1byFsl37OEaHYjYEV2ObVWDoHC_VrBB0RSS9tet1s59E', // TODO: Replace with your Spreadsheet ID
+  SPREADSHEET_ID: 'YOUR_SPREADSHEET_ID_HERE', // TODO: Replace with your Spreadsheet ID
+  
+  /**
+   * Example Spreadsheet ID (for reference only - DO NOT USE IN PRODUCTION)
+   * @type {string}
+   * @private
+   */
+  _EXAMPLE_SPREADSHEET_ID: '1byFsl37OEaHYjYEV2ObVWDoHC_VrBB0RSS9tet1s59E',
   
   /**
    * Sheet names used in the system
@@ -88,7 +95,14 @@ var CONFIG = {
    * IMPORTANT: Update this with your email address before deployment
    * @type {string}
    */
-  EMAIL_RECIPIENT: 'mina.saadallah@transcom.com', // TODO: Replace with your email
+  EMAIL_RECIPIENT: 'your.email@example.com', // TODO: Replace with your email
+  
+  /**
+   * Example email address (for reference only - DO NOT USE IN PRODUCTION)
+   * @type {string}
+   * @private
+   */
+  _EXAMPLE_EMAIL: 'mina.saadallah@transcom.com',
   
   /**
    * Email subject prefixes
@@ -311,6 +325,18 @@ var CONFIG = {
    * @type {number}
    */
   MIN_FUZZY_MATCH_LENGTH: 3,
+  
+  /**
+   * Default max chunks to clear (fallback value)
+   * @type {number}
+   */
+  DEFAULT_MAX_CHUNKS: 20,
+  
+  /**
+   * API health check timeout in milliseconds
+   * @type {number}
+   */
+  API_HEALTH_CHECK_TIMEOUT: 2000,
   
   // ============================================================================
   // VERSION INFORMATION

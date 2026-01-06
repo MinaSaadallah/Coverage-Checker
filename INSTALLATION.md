@@ -49,7 +49,7 @@ Upload all these `.gs` files to your Google Apps Script project:
 // Line 18: Set your Spreadsheet ID
 SPREADSHEET_ID: 'YOUR_SPREADSHEET_ID_HERE',
 
-// Line 84: Set your email address
+// Line 91: Set your email address
 EMAIL_RECIPIENT: 'your.email@example.com',
 ```
 
