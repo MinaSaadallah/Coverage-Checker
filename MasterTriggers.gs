@@ -391,13 +391,18 @@ function monthlyArchiveTrigger() {
     var dataRetention = (typeof CONFIG !== 'undefined') ? CONFIG.DATA_RETENTION_DAYS : 90;
     clearOldData(dataRetention);
     
-    // Step 2: Clean old health reports (keep last 100)
+    // Step 2: Clean old health reports (keep last MAX_HEALTH_REPORTS)
     logInfo('Step 2: Cleaning old health reports');
     var ss = getSpreadsheet();
     if (ss) {
       var healthSheet = ss.getSheetByName('System_Health');
-      if (healthSheet && healthSheet.getLastRow() > 101) {
-        healthSheet.deleteRows(2, healthSheet.getLastRow() - 101);
+      if (healthSheet) {
+        var config = typeof CONFIG !== 'undefined' ? CONFIG : { MAX_HEALTH_REPORTS: 100 };
+        var maxReports = config.MAX_HEALTH_REPORTS || 100;
+        
+        if (healthSheet.getLastRow() > (maxReports + 1)) {
+          healthSheet.deleteRows(2, healthSheet.getLastRow() - (maxReports + 1));
+        }
       }
     }
     

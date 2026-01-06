@@ -577,9 +577,12 @@ function storeHealthReport(report) {
     
     sheet.appendRow([timestamp, score, status, issuesCount, fixesCount, details]);
     
-    // Keep only last 100 health reports
-    if (sheet.getLastRow() > 101) {
-      sheet.deleteRows(2, sheet.getLastRow() - 101);
+    // Keep only last MAX_HEALTH_REPORTS health reports
+    var config = typeof CONFIG !== 'undefined' ? CONFIG : { MAX_HEALTH_REPORTS: 100 };
+    var maxReports = config.MAX_HEALTH_REPORTS || 100;
+    
+    if (sheet.getLastRow() > (maxReports + 1)) { // +1 for header
+      sheet.deleteRows(2, sheet.getLastRow() - (maxReports + 1));
     }
   } catch (e) {
     logError('Failed to store health report', { error: e.message });

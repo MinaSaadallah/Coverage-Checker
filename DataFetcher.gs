@@ -416,6 +416,10 @@ function createOperatorObject(countryCode, isp) {
 function findGSMAMatch(nperfOp, gsmaOperators) {
   var nperfNorm = normalizeOperatorName(nperfOp.operatorName);
   
+  // Get minimum fuzzy match length from config
+  var config = typeof CONFIG !== 'undefined' ? CONFIG : { MIN_FUZZY_MATCH_LENGTH: 3 };
+  var minLength = config.MIN_FUZZY_MATCH_LENGTH || 3;
+  
   for (var i = 0; i < gsmaOperators.length; i++) {
     var gsma = gsmaOperators[i];
     var gsmaNorm = normalizeOperatorName(gsma.name);
@@ -424,7 +428,7 @@ function findGSMAMatch(nperfOp, gsmaOperators) {
       return gsma;
     }
     
-    if (gsmaNorm.length > 3 && nperfNorm.length > 3) {
+    if (gsmaNorm.length > minLength && nperfNorm.length > minLength) {
       if (gsmaNorm.indexOf(nperfNorm) !== -1 || nperfNorm.indexOf(gsmaNorm) !== -1) {
         return gsma;
       }

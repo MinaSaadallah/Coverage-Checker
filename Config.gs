@@ -19,9 +19,12 @@ var CONFIG = {
   
   /**
    * Spreadsheet ID for the Coverage Checker
+   * IMPORTANT: Update this with your own Spreadsheet ID before deployment
+   * To find your ID: Open your Google Sheet and look at the URL
+   * Example: https://docs.google.com/spreadsheets/d/YOUR_ID_HERE/edit
    * @type {string}
    */
-  SPREADSHEET_ID: '1byFsl37OEaHYjYEV2ObVWDoHC_VrBB0RSS9tet1s59E',
+  SPREADSHEET_ID: '1byFsl37OEaHYjYEV2ObVWDoHC_VrBB0RSS9tet1s59E', // TODO: Replace with your Spreadsheet ID
   
   /**
    * Sheet names used in the system
@@ -58,6 +61,12 @@ var CONFIG = {
   MAX_CACHE_CHUNK_SIZE: 90000,
   
   /**
+   * Maximum number of cache chunks to check when removing
+   * @type {number}
+   */
+  MAX_CACHE_CHUNKS_TO_CLEAR: 20,
+  
+  /**
    * Cache key prefixes for organization
    * @type {Object}
    */
@@ -76,9 +85,10 @@ var CONFIG = {
   
   /**
    * Email recipient for reports and alerts
+   * IMPORTANT: Update this with your email address before deployment
    * @type {string}
    */
-  EMAIL_RECIPIENT: 'mina.saadallah@transcom.com',
+  EMAIL_RECIPIENT: 'mina.saadallah@transcom.com', // TODO: Replace with your email
   
   /**
    * Email subject prefixes
@@ -289,6 +299,18 @@ var CONFIG = {
    * @type {number}
    */
   MAX_LOG_ENTRIES: 1000,
+  
+  /**
+   * Maximum health reports to retain in System_Health sheet
+   * @type {number}
+   */
+  MAX_HEALTH_REPORTS: 100,
+  
+  /**
+   * Minimum string length for fuzzy name matching
+   * @type {number}
+   */
+  MIN_FUZZY_MATCH_LENGTH: 3,
   
   // ============================================================================
   // VERSION INFORMATION

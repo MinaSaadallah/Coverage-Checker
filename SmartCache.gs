@@ -190,8 +190,13 @@ function cacheRemove(key) {
     var cache = CacheService.getScriptCache();
     cache.remove(key);
     cache.remove(key + '_chunks');
-    // Remove up to 20 possible chunks
-    for (var i = 0; i < 20; i++) {
+    
+    // Get max chunks from config
+    var config = typeof CONFIG !== 'undefined' ? CONFIG : { MAX_CACHE_CHUNKS_TO_CLEAR: 20 };
+    var maxChunks = config.MAX_CACHE_CHUNKS_TO_CLEAR || 20;
+    
+    // Remove up to maxChunks possible chunks
+    for (var i = 0; i < maxChunks; i++) {
       cache.remove(key + '_chunk_' + i);
     }
     
