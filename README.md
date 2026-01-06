@@ -1,18 +1,47 @@
-# Coverage Checker
+# Coverage Checker v2.0.0 - Autonomous System
 
-A mobile network coverage checker application that helps users find mobile network operators and check their coverage for any location worldwide. The application combines data from GSMA (official mobile operator registry) and nPerf (network performance testing service) to provide comprehensive coverage information.
+A fully autonomous mobile network coverage checker that runs entirely within Google Apps Script with **zero manual intervention**. The system automatically fetches data from GSMA and nPerf, sends scheduled reports, monitors its own health, and self-heals issues.
 
-## Features
+## ✨ What's New in v2.0
 
-- **Location-Based Detection**: Paste any map link (Google Maps, Apple Maps, etc.) to automatically detect location and country
-- **Comprehensive Operator Database**: Access to 1360+ mobile network operators across 190+ countries
-- **Multiple Data Sources**: 
-  - nPerf coverage maps with signal strength visualization
-  - GSMA operator information and official data
-- **Smart Coordinate Extraction**: Automatically extracts coordinates from various map URL formats
-- **Reverse Geocoding**: Determines country from coordinates using OpenStreetMap Nominatim
-- **Interactive Map**: Visual location selection and display
-- **Google Apps Script Compatible**: Can run as both a standalone server and Google Apps Script web app
+### 🤖 **Fully Autonomous**
+- Auto-fetches data from GSMA, nPerf, and REST Countries APIs
+- Self-healing system that detects and fixes issues automatically
+- Smart trigger system with 7 automated schedules
+- One-click installation with `INSTALL_COVERAGE_CHECKER_SYSTEM()`
+
+### 📊 **Complete Analytics**
+- Auto-refreshing dashboard with real-time statistics
+- Daily email reports at 8 AM
+- Weekly maintenance reports (Sundays)
+- Monthly archive reports
+
+### 💾 **Advanced Caching**
+- 4-tier caching system (memory → script cache → properties → sheet)
+- Automatic cache warming and statistics tracking
+- Large data chunking support (handles datasets > 100KB)
+
+### 🔒 **Security & Monitoring**
+- Comprehensive logging with 5 severity levels
+- Input validation and XSS prevention
+- Rate limiting and security audits
+- System health scoring (0-100)
+
+### 🌍 **Full Country Support**
+- 250+ countries with full official names (no abbreviations)
+- Complete ISO 3166-1 mapping
+- Auto-sync country data from REST Countries API
+
+## Key Features
+
+- **Location-Based Detection**: Paste any map link (Google Maps, Apple Maps) to detect location
+- **Comprehensive Operator Database**: 1360+ mobile network operators across 190+ countries
+- **Multiple Data Sources**: nPerf coverage maps + GSMA operator information
+- **Smart Coordinate Extraction**: Automatically extracts coordinates from various URL formats
+- **Interactive Map**: Visual location selection with Leaflet
+- **Autonomous Operation**: Runs 24/7 with zero manual intervention after installation
+- **Self-Healing**: Automatically detects and repairs system issues
+- **Email Reports**: Daily, weekly, and monthly automated reports
 
 ## Table of Contents
 
@@ -29,12 +58,23 @@ A mobile network coverage checker application that helps users find mobile netwo
 
 ## Installation
 
-### Prerequisites
+### For Google Apps Script (v2.0 Autonomous System) ⭐ RECOMMENDED
 
+See **[INSTALLATION.md](INSTALLATION.md)** for complete setup instructions.
+
+**Quick Setup:**
+1. Upload all `.gs` files to your Google Apps Script project
+2. Update `Config.gs` with your Spreadsheet ID and email
+3. Run `INSTALL_COVERAGE_CHECKER_SYSTEM()` function
+4. Done! System runs autonomously 24/7
+
+### For Local Development (Node.js Server)
+
+#### Prerequisites
 - Node.js 14.0.0 or higher
 - npm (comes with Node.js)
 
-### Steps
+#### Steps
 
 1. Clone the repository:
 ```bash
@@ -284,14 +324,17 @@ coverage-checker/
 
 Simply run `npm start` and the server will be available at `http://localhost:3000`
 
-### Google Apps Script Deployment
+### For Google Apps Script Deployment ⭐ RECOMMENDED
 
-1. Copy the contents of `Code.gs` to a new Google Apps Script project
-2. Copy the contents of `import.gs` to the same project
-3. Copy the contents of `index.html` to an HTML file in the project
-4. Deploy as a web app
+1. Copy all `.gs` files to a new Google Apps Script project
+2. Copy `index.html` to an HTML file in the project
+3. Update `Config.gs` with your configuration
+4. Run `INSTALL_COVERAGE_CHECKER_SYSTEM()` to set up automation
+5. Deploy as a web app
 
-### Docker Deployment (Optional)
+**See [INSTALLATION.md](INSTALLATION.md) for detailed instructions.**
+
+### For Local Deployment
 
 Create a `Dockerfile`:
 ```dockerfile
@@ -403,14 +446,59 @@ If you encounter any issues or have questions:
 
 ## Roadmap
 
-- [ ] Add automated testing
-- [ ] Implement caching for geocoding results
-- [ ] Add more coverage data sources
-- [ ] Create Docker compose setup
-- [ ] Add CI/CD pipeline
-- [ ] Implement user authentication for Google Apps Script version
+### ✅ v2.0.0 (Current) - Autonomous System
+- [x] Full autonomous operation with zero manual intervention
+- [x] Smart trigger system with 7 automated schedules
+- [x] Self-healing system with auto-detection and repair
+- [x] 4-tier caching system
+- [x] Comprehensive logging (5 severity levels)
+- [x] Daily/weekly/monthly email reports
+- [x] Auto-fetch from GSMA, nPerf, REST Countries APIs
+- [x] Security features (validation, sanitization, rate limiting)
+- [x] Real-time dashboard with health scoring
+- [x] 250+ countries with full official names
+- [x] One-click installation system
+
+### 🔮 Future Enhancements
+- [ ] Add automated testing suite
+- [ ] Implement historical trend analysis
 - [ ] Add coverage comparison features
-- [ ] Mobile app version
+- [ ] Create mobile app version
+- [ ] Add user authentication and multi-user support
+- [ ] Implement data export (CSV, JSON, PDF reports)
+- [ ] Add custom alert thresholds
+- [ ] Create admin dashboard web interface
+
+---
+
+## 📚 Additional Documentation
+
+- **[INSTALLATION.md](INSTALLATION.md)** - Complete setup and installation guide for v2.0
+- **[README.md](README.md)** - This file (overview and quick start)
+
+---
+
+## 🆕 What's New in v2.0
+
+The Coverage Checker has been completely transformed into a fully autonomous system:
+
+### Before (v1.x)
+- Manual data updates
+- Manual trigger setup
+- No health monitoring
+- No automated reports
+- Basic caching
+- ~95 countries
+
+### After (v2.0)
+- **Fully autonomous** - runs 24/7 with zero intervention
+- **Self-healing** - detects and fixes issues automatically
+- **Smart triggers** - 7 automated schedules
+- **Email reports** - daily, weekly, monthly
+- **Advanced caching** - 4-tier system with statistics
+- **Health monitoring** - continuous scoring (0-100)
+- **250+ countries** - full official names
+- **One-click setup** - install with a single function call
 
 ---
 
