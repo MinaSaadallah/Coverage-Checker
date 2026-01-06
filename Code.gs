@@ -111,7 +111,7 @@ function loadFromSheet() {
     Logger.log('Sheet load error: ' + e.message);
     return [];
   }
-}
+} 
 
 function loadFromCache() {
   try {
