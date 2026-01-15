@@ -10,9 +10,11 @@
  * Strategy Priority:
  * 1. Google Maps place marker format (!8m2!3d...!4d...)
  * 2. Google Maps standard format (!3d...!4d...)
- * 3. Apple Maps coordinate parameter
- * 4. Query parameters (q=, ll=, sll=)
- * 5. @ viewport coordinates (less accurate)
+ * 3. Apple Maps ll= parameter (most accurate for Apple Maps)
+ * 4. Apple Maps coordinate= parameter
+ * 5. Query parameters (q=, ll=, sll=, center=)
+ * 6. @ viewport coordinates (less accurate)
+ * 7. Place URL with coordinates in path
  * 
  * @param {string} url - The URL to extract coordinates from
  * @returns {Object|null} Coordinate object with lat/lng properties, or null if not found
@@ -22,6 +24,14 @@
  */
 function extractCoords(url) {
   if (!url) return null;
+  
+  // Decode URL to handle encoded characters
+  try {
+    url = decodeURIComponent(url);
+  } catch (e) {
+    // URL already decoded or invalid encoding
+  }
+  
   let match;
 
   // Priority 1: !8m2!3d...!4d... (place marker) - get the LAST match
@@ -38,19 +48,31 @@ function extractCoords(url) {
   while ((match = r3d4d.exec(url)) !== null) last = match;
   if (last) return { lat: parseFloat(last[1]), lng: parseFloat(last[2]) };
 
-  // Priority 3: Apple Maps coordinate=
-  // Apple Maps uses a different parameter format
-  match = url.match(/[?&]coordinate=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  // Priority 3: Apple Maps ll= parameter (most common for Apple Maps)
+  // Format: ?ll=lat,lng or &ll=lat,lng
+  match = url.match(/[?&]ll=(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
   if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
 
-  // Priority 4: Query params (q=, ll=, sll=)
+  // Priority 4: Apple Maps coordinate= parameter
+  // Apple Maps uses this parameter format in some links
+  match = url.match(/[?&]coordinate=(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
+  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+
+  // Priority 5: Query params (q=, sll=, center=)
   // Common query parameter formats used by various mapping services
-  match = url.match(/[?&](?:q|ll|sll)=(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
+  // Note: We check 'll=' separately above because it's more reliable for Apple Maps
+  match = url.match(/[?&](?:q|sll|center)=(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
   if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
 
-  // Priority 5: @ viewport (less accurate)
+  // Priority 6: @ viewport (less accurate)
   // This represents the viewport center, not necessarily a specific location
+  // Format: @lat,lng,zoom or @lat,lng
   match = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
+
+  // Priority 7: Place URL with coordinates embedded
+  // Some place URLs have coordinates in the path: /place/Name/@lat,lng
+  match = url.match(/\/place\/[^/]+\/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
   if (match) return { lat: parseFloat(match[1]), lng: parseFloat(match[2]) };
 
   return null;
@@ -67,15 +89,34 @@ function extractCoords(url) {
  * extractCoordsFromHtml('<meta property="place:location:latitude" content="40.7128">')
  */
 function extractCoordsFromHtml(html) {
-  // Apple Maps meta tags
+  if (!html) return null;
+
+  // Apple Maps meta tags - standard format
   // Apple Maps includes geographic metadata in HTML meta tags
-  const latMatch = html.match(/property=["']place:location:latitude["']\s+content=["'](-?\d+\.?\d*)["']/);
-  const lngMatch = html.match(/property=["']place:location:longitude["']\s+content=["'](-?\d+\.?\d*)["']/);
+  let latMatch = html.match(/property=["']place:location:latitude["']\s+content=["'](-?\d+\.?\d*)["']/);
+  let lngMatch = html.match(/property=["']place:location:longitude["']\s+content=["'](-?\d+\.?\d*)["']/);
   if (latMatch && lngMatch) return { lat: parseFloat(latMatch[1]), lng: parseFloat(lngMatch[1]) };
 
-  // JSON center property
-  // Some mapping services embed coordinates in JSON format
-  const centerMatch = html.match(/"center":\s*\[\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\]/);
+  // Apple Maps alternate format (content before property)
+  latMatch = html.match(/content=["'](-?\d+\.?\d*)["']\s+property=["']place:location:latitude["']/);
+  lngMatch = html.match(/content=["'](-?\d+\.?\d*)["']\s+property=["']place:location:longitude["']/);
+  if (latMatch && lngMatch) return { lat: parseFloat(latMatch[1]), lng: parseFloat(lngMatch[1]) };
+
+  // OpenGraph geo tags (used by some mapping services)
+  latMatch = html.match(/property=["']og:latitude["']\s+content=["'](-?\d+\.?\d*)["']/);
+  lngMatch = html.match(/property=["']og:longitude["']\s+content=["'](-?\d+\.?\d*)["']/);
+  if (latMatch && lngMatch) return { lat: parseFloat(latMatch[1]), lng: parseFloat(lngMatch[1]) };
+
+  // JSON center property (lat, lng order)
+  let centerMatch = html.match(/"center":\s*\[\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\]/);
+  if (centerMatch) return { lat: parseFloat(centerMatch[1]), lng: parseFloat(centerMatch[2]) };
+
+  // JSON lat/lng object format
+  centerMatch = html.match(/"lat":\s*(-?\d+\.?\d*)\s*,\s*"lng":\s*(-?\d+\.?\d*)/);
+  if (centerMatch) return { lat: parseFloat(centerMatch[1]), lng: parseFloat(centerMatch[2]) };
+
+  // JSON latitude/longitude object format
+  centerMatch = html.match(/"latitude":\s*(-?\d+\.?\d*)\s*,\s*"longitude":\s*(-?\d+\.?\d*)/);
   if (centerMatch) return { lat: parseFloat(centerMatch[1]), lng: parseFloat(centerMatch[2]) };
 
   return null;
