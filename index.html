@@ -1357,7 +1357,7 @@
                     renderActionButtons(null);
                     return;
                 }
-                if (!/^https?:\/\/|www\.|maps\.|goo\.gl|apple/i.test(url)) { setStatus('Enter a valid link'); return; }
+                if (!/^https?:\/\/|www\.|maps\.|goo\.gl|apple\.com/i.test(url)) { setStatus('Enter a valid link'); return; }
 
                 setStatus('Detecting...');
                 var urlCountry = detectCountryFromURL(url);
@@ -1405,12 +1405,24 @@
                 while ((m = r.exec(url)) !== null) last = m;
                 if (last) return { lat: parseFloat(last[1]), lng: parseFloat(last[2]) };
 
-                // Priority 3: @ coordinates (viewport center - less accurate)
+                // Priority 3: Apple Maps ll= parameter (most common for Apple Maps)
+                m = url.match(/[?&]ll=(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
+                if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+
+                // Priority 4: Apple Maps coordinate= parameter
+                m = url.match(/[?&]coordinate=(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
+                if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+
+                // Priority 5: Query params (q=, sll=, center=)
+                m = url.match(/[?&](?:q|sll|center)=(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
+                if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
+
+                // Priority 6: @ coordinates (viewport center - less accurate)
                 m = url.match(/@(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
                 if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
 
-                // Priority 4: Query params
-                m = url.match(/[?&](?:q|ll|sll)=(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)/);
+                // Priority 7: Place URL with coordinates embedded
+                m = url.match(/\/place\/[^/]+\/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
                 if (m) return { lat: parseFloat(m[1]), lng: parseFloat(m[2]) };
 
                 return null;
@@ -1427,13 +1439,72 @@
 
             function detectCountryFromURL(url) {
                 if (!url) return null;
+                
+                // Method 1: Extract from place name in URL
                 var m = url.match(/\/place\/([^/@]+)/);
                 if (m) {
                     var p = decodeURIComponent(m[1].replace(/\+/g, ' ')).toLowerCase();
+                    
+                    // Check for specific territories first (higher priority)
                     if (p.indexOf('hong kong') !== -1) return 'HK';
                     if (p.indexOf('macau') !== -1 || p.indexOf('macao') !== -1) return 'MO';
-                    for (var n in NAME_TO_CODE) { if (p.indexOf(n) !== -1) return NAME_TO_CODE[n]; }
+                    if (p.indexOf('puerto rico') !== -1) return 'PR';
+                    if (p.indexOf('us virgin islands') !== -1 || p.indexOf('u.s. virgin islands') !== -1) return 'VI';
+                    if (p.indexOf('british virgin islands') !== -1) return 'VG';
+                    if (p.indexOf('cayman islands') !== -1) return 'KY';
+                    if (p.indexOf('turks and caicos') !== -1) return 'TC';
+                    if (p.indexOf('sint maarten') !== -1 || p.indexOf('st maarten') !== -1) return 'SX';
+                    if (p.indexOf('saint martin') !== -1 || p.indexOf('st martin') !== -1) return 'MF';
+                    if (p.indexOf('guadeloupe') !== -1) return 'GP';
+                    if (p.indexOf('martinique') !== -1) return 'MQ';
+                    if (p.indexOf('french guiana') !== -1) return 'GF';
+                    if (p.indexOf('reunion') !== -1 || p.indexOf('réunion') !== -1) return 'RE';
+                    if (p.indexOf('mayotte') !== -1) return 'YT';
+                    if (p.indexOf('new caledonia') !== -1) return 'NC';
+                    if (p.indexOf('french polynesia') !== -1) return 'PF';
+                    if (p.indexOf('aruba') !== -1) return 'AW';
+                    if (p.indexOf('curacao') !== -1 || p.indexOf('curaçao') !== -1) return 'CW';
+                    if (p.indexOf('bonaire') !== -1) return 'BQ';
+                    
+                    // Then check country names
+                    for (var n in NAME_TO_CODE) { 
+                        if (p.indexOf(n) !== -1) return NAME_TO_CODE[n]; 
+                    }
                 }
+                
+                // Method 2: Extract from regional Google Maps domains
+                // maps.google.de → DE, maps.google.jp → JP, etc.
+                var domainMatch = url.match(/maps\.google\.([a-z]{2})\//i);
+                if (domainMatch) {
+                    var tld = domainMatch[1].toUpperCase();
+                    // Map common TLDs to country codes
+                    var tldMap = {
+                        'UK': 'GB', // google.uk → United Kingdom
+                        'JP': 'JP',
+                        'DE': 'DE',
+                        'FR': 'FR',
+                        'ES': 'ES',
+                        'IT': 'IT',
+                        'BR': 'BR',
+                        'MX': 'MX',
+                        'CA': 'CA',
+                        'AU': 'AU',
+                        'IN': 'IN',
+                        'KR': 'KR',
+                        'CN': 'CN'
+                    };
+                    if (tldMap[tld]) return tldMap[tld];
+                    // For other TLDs, use them directly if they're valid country codes
+                    if (COUNTRY_NAMES[tld]) return tld;
+                }
+                
+                // Method 3: Check query parameters for region hints
+                var regionMatch = url.match(/[?&]region=([A-Z]{2})/i);
+                if (regionMatch) {
+                    var region = regionMatch[1].toUpperCase();
+                    if (COUNTRY_NAMES[region]) return region;
+                }
+                
                 return null;
             }
 

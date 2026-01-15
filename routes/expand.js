@@ -52,23 +52,71 @@ router.post('/', asyncHandler(async (req, res) => {
 
   try {
     let targetUrl = url;
+    let redirectCount = 0;
+    const maxRedirects = 5; // Support up to 5 redirects for complex short links
 
     // Step 1: Follow redirects to get the final URL
+    // Some short links (especially Google's goo.gl) redirect multiple times
+    // and may go through consent pages
     try {
-      const response = await axios.head(url, {
-        maxRedirects: 10,
-        validateStatus: null,
-        timeout: config.api.requestTimeout
+      const response = await axios.get(url, {
+        maxRedirects: maxRedirects,
+        validateStatus: (status) => status < 400, // Accept all 2xx and 3xx
+        timeout: config.api.requestTimeout,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9'
+        }
       });
 
-      // Get the final URL after redirects
+      // Get the final URL after all redirects
       if (response.request && response.request.res && response.request.res.responseUrl) {
         targetUrl = response.request.res.responseUrl;
         logger.debug(`URL expanded to: ${targetUrl}`);
+        
+        // Handle Google consent pages
+        // If we land on consent.google.com, try to extract the continue URL
+        // Validate that consent.google.com is the actual hostname to prevent bypass
+        try {
+          const urlObj = new URL(targetUrl);
+          if (urlObj.hostname === 'consent.google.com') {
+            const continueMatch = targetUrl.match(/[?&]continue=([^&]+)/);
+            if (continueMatch) {
+              try {
+                targetUrl = decodeURIComponent(continueMatch[1]);
+                logger.debug(`Extracted URL from consent page: ${targetUrl}`);
+              } catch (e) {
+                logger.warn('Failed to decode continue URL from consent page');
+              }
+            }
+          }
+        } catch (e) {
+          // Invalid URL, skip consent handling
+          logger.debug('Skipping consent handling due to invalid URL');
+        }
       }
     } catch (e) {
-      // If HEAD request fails, use original URL
-      logger.warn('HEAD request failed, using original URL');
+      // If GET request fails, try HEAD request as fallback
+      logger.warn('GET request failed, trying HEAD request');
+      try {
+        const headResponse = await axios.head(url, {
+          maxRedirects: maxRedirects,
+          validateStatus: null,
+          timeout: config.api.requestTimeout,
+          headers: {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+          }
+        });
+
+        if (headResponse.request && headResponse.request.res && headResponse.request.res.responseUrl) {
+          targetUrl = headResponse.request.res.responseUrl;
+          logger.debug(`URL expanded via HEAD to: ${targetUrl}`);
+        }
+      } catch (headError) {
+        // Both requests failed, use original URL
+        logger.warn('Both GET and HEAD requests failed, using original URL');
+      }
     }
 
     // Step 2: Try to extract coordinates from the URL
