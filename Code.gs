@@ -238,12 +238,16 @@ function followRedirects(startUrl) {
       var isApple = currentUrl.indexOf('apple') !== -1;
       var ua = isApple
         ? 'Mozilla/5.0 (iPhone; CPU iPhone OS 16_0 like Mac OS X) AppleWebKit/605.1.15'
-        : 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36';
+        : 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36';
       
       var response = UrlFetchApp.fetch(currentUrl, {
         followRedirects: false,
         muteHttpExceptions: true,
-        headers: { 'User-Agent': ua }
+        headers: { 
+          'User-Agent': ua,
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,*/*;q=0.8',
+          'Accept-Language': 'en-US,en;q=0.9'
+        }
       });
       
       var code = response.getResponseCode();
@@ -257,12 +261,32 @@ function followRedirects(startUrl) {
             location = m[1] + (location.charAt(0) === '/' ? '' : '/') + location;
           }
         }
+        
+        // Handle Google consent pages securely
+        // Validate that consent.google.com is the actual hostname
+        try {
+          var urlParts = location.match(/^https?:\/\/([^\/]+)/);
+          if (urlParts && urlParts[1] === 'consent.google.com') {
+            var continueMatch = location.match(/[?&]continue=([^&]+)/);
+            if (continueMatch) {
+              try {
+                location = decodeURIComponent(continueMatch[1]);
+                Logger.log('Extracted URL from consent page: ' + location);
+              } catch (decodeErr) {
+                Logger.log('Failed to decode continue URL from consent page');
+              }
+            }
+          }
+        } catch (consentErr) {
+          // Invalid URL, skip consent handling
+        }
+        
         var coords = extractCoords(location);
         if (coords) foundCoords = coords;
         currentUrl = location;
         finalUrl = location;
       } else {
-        content = response. getContentText();
+        content = response.getContentText();
         break;
       }
     } catch (e) {
@@ -270,7 +294,7 @@ function followRedirects(startUrl) {
     }
   }
   
-  if (! foundCoords) {
+  if (!foundCoords) {
     foundCoords = extractCoords(finalUrl);
   }
   
@@ -278,14 +302,14 @@ function followRedirects(startUrl) {
 }
 
 function extractCoords(url) {
-  if (! url) return null;
+  if (!url) return null;
   
   try { url = decodeURIComponent(url); } catch (e) {}
   
   var lat, lng, m;
   
-  // Google place marker (last match)
-  var re1 = /! 8m2!3d(-?\d+\. ?\d*)!4d(-?\d+\. ?\d*)/g;
+  // Priority 1: Google place marker (!8m2!3d...!4d...) - get the LAST match
+  var re1 = /!8m2!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/g;
   var last1 = null;
   while ((m = re1.exec(url)) !== null) last1 = m;
   if (last1) {
@@ -294,7 +318,7 @@ function extractCoords(url) {
     if (isValidCoord(lat, lng)) return { lat: lat, lng: lng };
   }
   
-  // Google coords (last match)
+  // Priority 2: Google standard coords (!3d...!4d...) - get the LAST match
   var re2 = /!3d(-?\d+\.?\d*)!4d(-?\d+\.?\d*)/g;
   var last2 = null;
   while ((m = re2.exec(url)) !== null) last2 = m;
@@ -304,26 +328,43 @@ function extractCoords(url) {
     if (isValidCoord(lat, lng)) return { lat: lat, lng: lng };
   }
   
-  // Apple coordinate param
-  m = url.match(/[?&]coordinate=(-?\d+\.?\d*)[,%](-?\d+\.?\d*)/);
-  if (!m) m = url.match(/[?&]coordinate=(-?\d+\. ?\d*)%2C(-?\d+\.?\d*)/);
+  // Priority 3: Apple Maps ll parameter (most common for Apple Maps)
+  m = url.match(/[?&]ll=(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
+  if (!m) m = url.match(/[?&]ll=(-?\d+\.?\d*)%2C(-?\d+\.?\d*)/);
   if (m) {
     lat = parseFloat(m[1]);
     lng = parseFloat(m[2]);
     if (isValidCoord(lat, lng)) return { lat: lat, lng: lng };
   }
   
-  // @lat,lng
-  m = url. match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  // Priority 4: Apple Maps coordinate parameter
+  m = url.match(/[?&]coordinate=(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
+  if (!m) m = url.match(/[?&]coordinate=(-?\d+\.?\d*)%2C(-?\d+\.?\d*)/);
   if (m) {
     lat = parseFloat(m[1]);
     lng = parseFloat(m[2]);
     if (isValidCoord(lat, lng)) return { lat: lat, lng: lng };
   }
   
-  // ll, sll, q params
-  m = url.match(/[?&](?:q|ll|sll)=(-?\d+\.?\d*)[,%](-?\d+\.?\d*)/);
-  if (!m) m = url.match(/[?&](?:q|ll|sll)=(-?\d+\.?\d*)%2C(-?\d+\.?\d*)/);
+  // Priority 5: Query params (q=, sll=, center=)
+  m = url.match(/[?&](?:q|sll|center)=(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
+  if (!m) m = url.match(/[?&](?:q|sll|center)=(-?\d+\.?\d*)%2C(-?\d+\.?\d*)/);
+  if (m) {
+    lat = parseFloat(m[1]);
+    lng = parseFloat(m[2]);
+    if (isValidCoord(lat, lng)) return { lat: lat, lng: lng };
+  }
+  
+  // Priority 6: @lat,lng viewport
+  m = url.match(/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  if (m) {
+    lat = parseFloat(m[1]);
+    lng = parseFloat(m[2]);
+    if (isValidCoord(lat, lng)) return { lat: lat, lng: lng };
+  }
+  
+  // Priority 7: Place URL with coordinates in path
+  m = url.match(/\/place\/[^/]+\/@(-?\d+\.?\d*),(-?\d+\.?\d*)/);
   if (m) {
     lat = parseFloat(m[1]);
     lng = parseFloat(m[2]);
@@ -345,8 +386,8 @@ function extractCoordsFromHtml(html) {
   
   var lat, lng, m;
   
-  // Place location meta
-  var latM = html.match(/place: location:latitude["']\s+content=["'](-?\d+\.?\d*)["']/);
+  // Apple Maps meta tags - standard format
+  var latM = html.match(/place:location:latitude["']\s+content=["'](-?\d+\.?\d*)["']/);
   var lngM = html.match(/place:location:longitude["']\s+content=["'](-?\d+\.?\d*)["']/);
   if (latM && lngM) {
     lat = parseFloat(latM[1]);
@@ -354,7 +395,16 @@ function extractCoordsFromHtml(html) {
     if (isValidCoord(lat, lng)) return { lat: lat, lng: lng };
   }
   
-  // OG meta
+  // Apple Maps alternate format (content before property)
+  latM = html.match(/content=["'](-?\d+\.?\d*)["']\s+property=["']place:location:latitude["']/);
+  lngM = html.match(/content=["'](-?\d+\.?\d*)["']\s+property=["']place:location:longitude["']/);
+  if (latM && lngM) {
+    lat = parseFloat(latM[1]);
+    lng = parseFloat(lngM[1]);
+    if (isValidCoord(lat, lng)) return { lat: lat, lng: lng };
+  }
+  
+  // OpenGraph geo tags
   latM = html.match(/og:latitude["']\s+content=["'](-?\d+\.?\d*)["']/);
   lngM = html.match(/og:longitude["']\s+content=["'](-?\d+\.?\d*)["']/);
   if (latM && lngM) {
@@ -363,20 +413,27 @@ function extractCoordsFromHtml(html) {
     if (isValidCoord(lat, lng)) return { lat: lat, lng: lng };
   }
   
-  // ll param
-  m = html.match(/[?&]ll=(-?\d+\.?\d*),(-?\d+\.?\d*)/);
+  // JSON center property (lat, lng order)
+  m = html.match(/"center":\s*\[\s*(-?\d+\.?\d*)\s*,\s*(-?\d+\.?\d*)\s*\]/);
   if (m) {
     lat = parseFloat(m[1]);
     lng = parseFloat(m[2]);
     if (isValidCoord(lat, lng)) return { lat: lat, lng: lng };
   }
   
-  // JSON lat/lng
-  latM = html.match(/["']lat["']\s*:\s*(-?\d+\.?\d*)/);
-  lngM = html.match(/["']lng["']\s*:\s*(-?\d+\.?\d*)/);
-  if (latM && lngM) {
-    lat = parseFloat(latM[1]);
-    lng = parseFloat(lngM[1]);
+  // JSON lat/lng object format
+  m = html.match(/"lat":\s*(-?\d+\.?\d*)\s*,\s*"lng":\s*(-?\d+\.?\d*)/);
+  if (m) {
+    lat = parseFloat(m[1]);
+    lng = parseFloat(m[2]);
+    if (isValidCoord(lat, lng)) return { lat: lat, lng: lng };
+  }
+  
+  // JSON latitude/longitude object format
+  m = html.match(/"latitude":\s*(-?\d+\.?\d*)\s*,\s*"longitude":\s*(-?\d+\.?\d*)/);
+  if (m) {
+    lat = parseFloat(m[1]);
+    lng = parseFloat(m[2]);
     if (isValidCoord(lat, lng)) return { lat: lat, lng: lng };
   }
   
