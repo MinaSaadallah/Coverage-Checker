@@ -77,16 +77,23 @@ router.post('/', asyncHandler(async (req, res) => {
         
         // Handle Google consent pages
         // If we land on consent.google.com, try to extract the continue URL
-        if (targetUrl.includes('consent.google.com')) {
-          const continueMatch = targetUrl.match(/[?&]continue=([^&]+)/);
-          if (continueMatch) {
-            try {
-              targetUrl = decodeURIComponent(continueMatch[1]);
-              logger.debug(`Extracted URL from consent page: ${targetUrl}`);
-            } catch (e) {
-              logger.warn('Failed to decode continue URL from consent page');
+        // Validate that consent.google.com is the actual hostname to prevent bypass
+        try {
+          const urlObj = new URL(targetUrl);
+          if (urlObj.hostname === 'consent.google.com') {
+            const continueMatch = targetUrl.match(/[?&]continue=([^&]+)/);
+            if (continueMatch) {
+              try {
+                targetUrl = decodeURIComponent(continueMatch[1]);
+                logger.debug(`Extracted URL from consent page: ${targetUrl}`);
+              } catch (e) {
+                logger.warn('Failed to decode continue URL from consent page');
+              }
             }
           }
+        } catch (e) {
+          // Invalid URL, skip consent handling
+          logger.debug('Skipping consent handling due to invalid URL');
         }
       }
     } catch (e) {
